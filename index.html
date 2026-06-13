@@ -3,32 +3,607 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Harrison, NY</title>
+  <title>Harrison, NY — Allergen & Socioeconomic Map</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" />
   <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
   <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      height: 100%;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body, html { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    #map { width: 100%; height: 100vh; }
+
+    /* ── shared panel style ── */
+    .panel {
+      position: absolute;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 14px rgba(0,0,0,0.15);
+      z-index: 1;
     }
-    #map {
-      width: 100%;
-      height: 100vh;
+
+    /* ── left info panel ── */
+    #info-panel {
+      top: 10px; left: 10px;
+      width: 240px;
+      padding: 14px 16px;
+      display: none;
     }
+    #info-panel h2 { font-size: 13px; font-weight: 700; color: #222; }
+    #info-panel .ts { font-size: 10px; color: #aaa; margin: 2px 0 10px; }
+    .section { font-size: 10px; font-weight: 700; text-transform: uppercase;
+                letter-spacing: .07em; color: #999; margin: 10px 0 5px; }
+    .row { display: flex; justify-content: space-between; font-size: 12px;
+           color: #555; margin-bottom: 4px; }
+    .row b { color: #111; font-weight: 600; }
+    .divider { border: none; border-top: 1px solid #eee; margin: 10px 0; }
+    #tract-info { display: none; }
+    #tract-info .tract-name { font-size: 11px; font-weight: 600; color: #444; margin-bottom: 6px; }
+    .risk-badge {
+      display: inline-block; font-size: 10px; font-weight: 700;
+      padding: 2px 7px; border-radius: 10px; margin-bottom: 8px;
+    }
+
+    /* ── controls panel ── */
+    #controls {
+      top: 10px; right: 46px;
+      padding: 12px 14px;
+      width: 200px;
+    }
+    #controls h3 { font-size: 11px; font-weight: 700; text-transform: uppercase;
+                   letter-spacing: .07em; color: #888; margin-bottom: 10px; }
+    .ctrl-group { margin-bottom: 12px; }
+    .ctrl-label { font-size: 12px; color: #444; font-weight: 600; margin-bottom: 6px; }
+    .toggle-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: #555; cursor: pointer; user-select: none;
+      padding: 3px 0;
+    }
+    .toggle-row input { cursor: pointer; }
+    .radio-row {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: #555; cursor: pointer; user-select: none;
+      padding: 3px 0;
+    }
+    .radio-row input { cursor: pointer; }
+    .radio-row.active { color: #111; font-weight: 600; }
+    #controls .note {
+      font-size: 10px; color: #bbb; margin-top: 10px; line-height: 1.5;
+    }
+    #controls .note a { color: #888; }
+
+    /* ── legend ── */
+    #legend {
+      bottom: 36px; right: 10px;
+      padding: 12px 14px;
+      width: 185px;
+      display: none;
+    }
+    #legend .leg-title { font-size: 11px; font-weight: 700; color: #444; margin-bottom: 6px; }
+    .grad-bar { height: 9px; border-radius: 4px; margin-bottom: 3px; }
+    .grad-labels { display: flex; justify-content: space-between; font-size: 10px; color: #999; }
+    .leg-sep { border: none; border-top: 1px solid #eee; margin: 8px 0; }
+    .leg-item { display: flex; align-items: center; gap: 6px;
+                font-size: 11px; color: #555; margin-bottom: 3px; }
+    .leg-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── loading ── */
+    #loading {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: white; padding: 24px 32px; border-radius: 10px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.15); z-index: 10;
+      text-align: center; font-size: 13px; color: #555;
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid #eee; border-top-color: #555;
+      border-radius: 50%; animation: spin .8s linear infinite;
+      margin: 0 auto 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── key warning ── */
+    #key-warning {
+      position: absolute; bottom: 36px; left: 10px;
+      background: #fffbe6; border: 1px solid #ffe58f;
+      border-radius: 8px; padding: 10px 12px;
+      font-size: 11px; color: #7d5a00; max-width: 260px;
+      z-index: 1; display: none;
+    }
+    #key-warning a { color: #5a3d00; font-weight: 600; }
   </style>
 </head>
 <body>
-  <div id="map"></div>
-  <script>
-    const map = new maplibregl.Map({
-      container: 'map',
-      style: 'https://tiles.openfreemap.org/styles/bright',
-      center: [-73.7124, 40.9676],
-      zoom: 13
-    });
+<div id="map"></div>
+<div id="loading"><div class="spinner"></div>Loading data…</div>
 
-    map.addControl(new maplibregl.NavigationControl());
-  </script>
+<!-- Left: allergen readings + clicked tract info -->
+<div id="info-panel" class="panel">
+  <h2>Harrison, NY</h2>
+  <div class="ts" id="ts"></div>
+
+  <div class="section">Pollen (Open-Meteo / CAMS)</div>
+  <div id="pollen-rows"></div>
+
+  <div class="section">Air Quality</div>
+  <div id="aqi-rows"></div>
+
+  <hr class="divider">
+  <div id="tract-info">
+    <div class="section">Census Tract (ACS 2023)</div>
+    <div class="tract-name" id="tract-name"></div>
+    <div id="tract-rows"></div>
+    <div style="font-size:10px;color:#bbb;margin-top:8px;">Click a tract to explore</div>
+  </div>
+  <div id="tract-hint" style="font-size:11px;color:#bbb;">Click any tract to see socioeconomic data.</div>
+</div>
+
+<!-- Right: layer controls -->
+<div id="controls" class="panel">
+  <h3>Layers</h3>
+
+  <div class="ctrl-group">
+    <div class="ctrl-label">Allergen Heatmap</div>
+    <label class="toggle-row">
+      <input type="checkbox" id="toggle-heatmap" checked>
+      Show allergen intensity
+    </label>
+  </div>
+
+  <div class="ctrl-group">
+    <div class="ctrl-label">Socioeconomic Layer</div>
+    <label class="radio-row active">
+      <input type="radio" name="ses" value="income" checked> Median Income
+    </label>
+    <label class="radio-row">
+      <input type="radio" name="ses" value="poverty"> Poverty Rate
+    </label>
+    <label class="radio-row">
+      <input type="radio" name="ses" value="year_built"> Housing Age
+    </label>
+    <label class="radio-row">
+      <input type="radio" name="ses" value="none"> None
+    </label>
+  </div>
+
+  <div class="note">
+    SES data: US Census ACS 5-year 2023.<br>
+    No key? Get one free at
+    <a href="https://api.census.gov/data/key_signup.html" target="_blank">api.census.gov</a>
+    — add it to <code>CENSUS_API_KEY</code> in the script.
+  </div>
+</div>
+
+<!-- Bottom-right: legend -->
+<div id="legend" class="panel"></div>
+
+<!-- Bottom-left: key warning -->
+<div id="key-warning">
+  ⚠ Census API key missing or invalid. Socioeconomic layer unavailable.<br>
+  Get a free key at <a href="https://api.census.gov/data/key_signup.html" target="_blank">api.census.gov</a>
+  and set <code>CENSUS_API_KEY</code> in the script.
+</div>
+
+<script>
+// ════════════════════════════════════════════════
+//  CONFIG — add your free Census API key here
+//  https://api.census.gov/data/key_signup.html
+// ════════════════════════════════════════════════
+const CENSUS_API_KEY = '';
+
+// ── constants ──────────────────────────────────
+const HARRISON  = { lat: 40.9676, lng: -73.7124 };
+const STATE     = '36';   // New York
+const COUNTY    = '119';  // Westchester
+
+// allergen sampling grid (4×4 over Westchester County)
+const LAT_RANGE = [40.88, 41.18];
+const LNG_RANGE = [-73.92, -73.48];
+const GRID      = 4;
+
+// ── SES layer definitions ──────────────────────
+const SES = {
+  income: {
+    label:    'Median Household Income',
+    field:    'income',
+    format:   v => '$' + Math.round(v).toLocaleString(),
+    lowLabel: '$60K', highLabel: '$200K+',
+    gradient: 'linear-gradient(to right,#eff3ff,#bdd7e7,#6baed6,#2171b5,#084594)',
+    paint: ['interpolate', ['linear'], ['get', 'income'],
+      60000,  '#eff3ff',
+      100000, '#bdd7e7',
+      130000, '#6baed6',
+      160000, '#2171b5',
+      200000, '#084594'],
+    note: 'Lower income → less access to allergy care'
+  },
+  poverty: {
+    label:    'Poverty Rate',
+    field:    'poverty_rate',
+    format:   v => (v * 100).toFixed(1) + '%',
+    lowLabel: '0%', highLabel: '30%+',
+    gradient: 'linear-gradient(to right,#fee5d9,#fcae91,#fb6a4a,#de2d26,#a50f15)',
+    paint: ['interpolate', ['linear'], ['get', 'poverty_rate'],
+      0,    '#fee5d9',
+      0.05, '#fcae91',
+      0.12, '#fb6a4a',
+      0.20, '#de2d26',
+      0.30, '#a50f15'],
+    note: 'Higher poverty → less allergen management capacity'
+  },
+  year_built: {
+    label:    'Median Year Built',
+    field:    'year_built',
+    format:   v => Math.round(v).toString(),
+    lowLabel: '≤1940', highLabel: '2010+',
+    gradient: 'linear-gradient(to right,#a63603,#e6550d,#fd8d3c,#fdbe85,#feedde)',
+    paint: ['interpolate', ['linear'], ['get', 'year_built'],
+      1940, '#a63603',
+      1960, '#e6550d',
+      1980, '#fd8d3c',
+      2000, '#fdbe85',
+      2010, '#feedde'],
+    note: 'Older housing → higher mold & pest allergen risk'
+  }
+};
+
+let activeSES   = 'income';
+let tractGeoJSON = null;
+
+// ══════════════════════════════════════════════
+//  MAP
+// ══════════════════════════════════════════════
+const map = new maplibregl.Map({
+  container: 'map',
+  style: 'https://tiles.openfreemap.org/styles/bright',
+  center: [HARRISON.lng, HARRISON.lat],
+  zoom: 11
+});
+map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+// ══════════════════════════════════════════════
+//  DATA FETCHING
+// ══════════════════════════════════════════════
+function currentHourIdx(times) {
+  const prefix = new Date().toISOString().slice(0, 13);
+  const idx = times.findIndex(t => t.startsWith(prefix));
+  return idx >= 0 ? idx : 0;
+}
+
+function clamp01(v, max) {
+  return (v == null || isNaN(v)) ? 0 : Math.min(Math.max(v, 0) / max, 1);
+}
+
+function allergenScore(hourly, idx) {
+  const pollen = (hourly.grass_pollen?.[idx] ?? 0)
+               + (hourly.birch_pollen?.[idx]   ?? 0)
+               + (hourly.alder_pollen?.[idx]   ?? 0)
+               + (hourly.ragweed_pollen?.[idx] ?? 0);
+  return 0.7 * clamp01(pollen, 150) + 0.3 * clamp01(hourly.us_aqi?.[idx] ?? 0, 200);
+}
+
+async function fetchOpenMeteo(lat, lng) {
+  const url = `https://air-quality-api.open-meteo.com/v1/air-quality`
+    + `?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}`
+    + `&hourly=pm2_5,us_aqi,grass_pollen,birch_pollen,alder_pollen,ragweed_pollen`
+    + `&forecast_days=1&timezone=America%2FNew_York`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Open-Meteo ${r.status}`);
+  return r.json();
+}
+
+async function fetchAllergenGrid() {
+  const pts = [];
+  for (let i = 0; i < GRID; i++)
+    for (let j = 0; j < GRID; j++)
+      pts.push({
+        lat: LAT_RANGE[0] + (LAT_RANGE[1] - LAT_RANGE[0]) * i / (GRID - 1),
+        lng: LNG_RANGE[0] + (LNG_RANGE[1] - LNG_RANGE[0]) * j / (GRID - 1)
+      });
+
+  const results = await Promise.all(
+    pts.map(p => fetchOpenMeteo(p.lat, p.lng).then(d => ({ ...p, d })))
+  );
+
+  return results.map(({ lat, lng, d }) => ({
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [lng, lat] },
+    properties: { score: allergenScore(d.hourly, currentHourIdx(d.hourly.time)) }
+  }));
+}
+
+async function fetchTractBoundaries() {
+  const url = `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/0/query`
+    + `?where=STATE%3D${STATE}+AND+COUNTY%3D${COUNTY}`
+    + `&outFields=TRACT,GEOID,NAME`
+    + `&outSR=4326&f=geojson&returnGeometry=true`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`TIGERweb ${r.status}`);
+  return r.json();
+}
+
+async function fetchACSData() {
+  const key   = CENSUS_API_KEY ? `&key=${CENSUS_API_KEY}` : '';
+  const vars  = 'B19013_001E,B17001_002E,B17001_001E,B25035_001E';
+  const url   = `https://api.census.gov/data/2023/acs/acs5`
+    + `?get=NAME,${vars}&for=tract:*&in=state:${STATE}+county:${COUNTY}${key}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`Census API ${r.status}`);
+  const rows    = await r.json();
+  const headers = rows[0];
+  const map     = {};
+  rows.slice(1).forEach(row => {
+    const obj    = {};
+    headers.forEach((h, i) => obj[h] = row[i]);
+    const geoid  = STATE + COUNTY + obj.tract;
+    const income = parseFloat(obj.B19013_001E);
+    const povN   = parseFloat(obj.B17001_002E);
+    const povD   = parseFloat(obj.B17001_001E);
+    const yrBlt  = parseFloat(obj.B25035_001E);
+    map[geoid] = {
+      income:      income  > 0 ? income  : null,
+      poverty_rate: (povD  > 0) ? povN / povD : null,
+      year_built:  yrBlt  > 0 ? yrBlt  : null,
+      name:        obj.NAME
+    };
+  });
+  return map;
+}
+
+function joinACS(geo, acsMap) {
+  geo.features.forEach(f => {
+    const geoid = f.properties.GEOID;
+    const acs   = acsMap[geoid];
+    if (acs) Object.assign(f.properties, acs);
+    else     Object.assign(f.properties, { income: null, poverty_rate: null, year_built: null });
+  });
+  return geo;
+}
+
+// ══════════════════════════════════════════════
+//  MAP LAYERS
+// ══════════════════════════════════════════════
+function addAllergenLayer(features) {
+  map.addSource('allergen', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features }
+  });
+  map.addLayer({
+    id: 'allergen-heat', type: 'heatmap', source: 'allergen',
+    paint: {
+      'heatmap-weight': ['get', 'score'],
+      'heatmap-intensity': 1.8,
+      'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 8, 60, 13, 120],
+      'heatmap-opacity': 0.6,
+      'heatmap-color': ['interpolate', ['linear'], ['heatmap-density'],
+        0,   'rgba(0,228,0,0)',
+        0.2, 'rgba(0,228,0,0.7)',
+        0.4, 'rgba(255,255,0,0.75)',
+        0.6, 'rgba(255,126,0,0.8)',
+        0.8, 'rgba(255,0,0,0.85)',
+        1,   'rgba(143,63,151,0.9)'
+      ]
+    }
+  });
+}
+
+function addTractLayers(geo) {
+  map.addSource('tracts', { type: 'geojson', data: geo });
+
+  // fill — choropleth; color set by updateSESLayer()
+  map.addLayer({
+    id: 'tracts-fill', type: 'fill', source: 'tracts',
+    paint: { 'fill-opacity': 0.55 }
+  }, 'allergen-heat'); // insert below heatmap
+
+  // outline
+  map.addLayer({
+    id: 'tracts-outline', type: 'line', source: 'tracts',
+    paint: { 'line-color': '#555', 'line-width': 0.4, 'line-opacity': 0.6 }
+  });
+
+  // highlight on hover
+  map.addLayer({
+    id: 'tracts-hover', type: 'line', source: 'tracts',
+    paint: { 'line-color': '#222', 'line-width': 2 },
+    filter: ['==', 'GEOID', '']
+  });
+}
+
+function updateSESLayer(key) {
+  if (key === 'none') {
+    map.setPaintProperty('tracts-fill', 'fill-color', 'rgba(0,0,0,0)');
+    return;
+  }
+  const def = SES[key];
+  map.setPaintProperty('tracts-fill', 'fill-color', [
+    'case',
+    ['==', ['get', def.field], null], '#dddddd',
+    def.paint
+  ]);
+}
+
+// ══════════════════════════════════════════════
+//  UI: legend
+// ══════════════════════════════════════════════
+function renderLegend(sesKey) {
+  const leg = document.getElementById('legend');
+  let html = '';
+
+  if (sesKey !== 'none') {
+    const def = SES[sesKey];
+    html += `
+      <div class="leg-title">${def.label}</div>
+      <div class="grad-bar" style="background:${def.gradient}"></div>
+      <div class="grad-labels"><span>${def.lowLabel}</span><span>${def.highLabel}</span></div>
+      <div style="font-size:10px;color:#aaa;margin-top:4px;">${def.note}</div>
+      <div class="leg-sep"></div>
+      <div class="leg-item"><div class="leg-dot" style="background:#ddd"></div> No data</div>
+      <hr class="leg-sep">`;
+  }
+
+  html += `
+    <div class="leg-title">Allergen Intensity</div>
+    <div class="grad-bar" style="background:linear-gradient(to right,#00e400,#ffff00,#ff7e00,#ff0000,#8f3f97)"></div>
+    <div class="grad-labels"><span>Low</span><span>High</span></div>
+    <div class="leg-sep"></div>
+    <div class="leg-item"><div class="leg-dot" style="background:#00e400"></div>Good</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#ffff00;border:1px solid #ddd"></div>Moderate</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#ff7e00"></div>Unhealthy (sensitive)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#ff0000"></div>Unhealthy</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#8f3f97"></div>Very Unhealthy</div>`;
+
+  leg.innerHTML = html;
+  leg.style.display = 'block';
+}
+
+// ══════════════════════════════════════════════
+//  UI: left panel
+// ══════════════════════════════════════════════
+function renderInfoPanel(data, idx) {
+  const h  = data.hourly;
+  const ts = new Date(h.time[idx]);
+  document.getElementById('ts').textContent =
+    ts.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+  document.getElementById('pollen-rows').innerHTML = [
+    ['Grass',   h.grass_pollen?.[idx]],
+    ['Birch',   h.birch_pollen?.[idx]],
+    ['Ragweed', h.ragweed_pollen?.[idx]],
+    ['Alder',   h.alder_pollen?.[idx]],
+  ].map(([l, v]) => `<div class="row"><span>${l}</span><b>${v != null ? v.toFixed(1) : '—'} μg/m³</b></div>`).join('');
+
+  document.getElementById('aqi-rows').innerHTML = [
+    ['US AQI', h.us_aqi?.[idx],  ''],
+    ['PM2.5',  h.pm2_5?.[idx],   ' μg/m³'],
+  ].map(([l, v, u]) => `<div class="row"><span>${l}</span><b>${v != null ? v.toFixed(0) : '—'}${u}</b></div>`).join('');
+
+  document.getElementById('info-panel').style.display = 'block';
+}
+
+function renderTractInfo(props) {
+  const fmt = (v, fn) => (v != null ? fn(v) : '—');
+  const incomeFmt = v => '$' + Math.round(v).toLocaleString();
+  const povFmt    = v => (v * 100).toFixed(1) + '%';
+  const yrFmt     = v => Math.round(v).toString();
+
+  // simple risk label based on income + poverty
+  let risk = 'Low', riskColor = '#52c41a', riskBg = '#f6ffed';
+  if (props.income != null && props.income < 80000) { risk = 'Elevated'; riskColor = '#fa8c16'; riskBg = '#fff7e6'; }
+  if (props.poverty_rate != null && props.poverty_rate > 0.15) { risk = 'High'; riskColor = '#f5222d'; riskBg = '#fff1f0'; }
+
+  document.getElementById('tract-name').textContent = props.name || `Tract ${props.TRACT}`;
+  document.getElementById('tract-rows').innerHTML = `
+    <div class="risk-badge" style="color:${riskColor};background:${riskBg};">
+      ${risk} allergen health risk
+    </div>
+    <div class="row"><span>Median Income</span><b>${fmt(props.income, incomeFmt)}</b></div>
+    <div class="row"><span>Poverty Rate</span><b>${fmt(props.poverty_rate, povFmt)}</b></div>
+    <div class="row"><span>Median Year Built</span><b>${fmt(props.year_built, yrFmt)}</b></div>
+  `;
+
+  document.getElementById('tract-info').style.display = 'block';
+  document.getElementById('tract-hint').style.display = 'none';
+}
+
+// ══════════════════════════════════════════════
+//  CONTROLS
+// ══════════════════════════════════════════════
+function setupControls() {
+  document.getElementById('toggle-heatmap').addEventListener('change', e => {
+    map.setLayoutProperty('allergen-heat', 'visibility', e.target.checked ? 'visible' : 'none');
+  });
+
+  document.querySelectorAll('input[name="ses"]').forEach(radio => {
+    radio.addEventListener('change', e => {
+      activeSES = e.target.value;
+      document.querySelectorAll('.radio-row').forEach(r => r.classList.remove('active'));
+      e.target.closest('.radio-row').classList.add('active');
+      updateSESLayer(activeSES);
+      renderLegend(activeSES);
+    });
+  });
+
+  // hover
+  let hoveredId = null;
+  map.on('mousemove', 'tracts-fill', e => {
+    if (!e.features.length) return;
+    map.getCanvas().style.cursor = 'pointer';
+    const geoid = e.features[0].properties.GEOID;
+    if (geoid !== hoveredId) {
+      hoveredId = geoid;
+      map.setFilter('tracts-hover', ['==', 'GEOID', geoid]);
+    }
+  });
+  map.on('mouseleave', 'tracts-fill', () => {
+    map.getCanvas().style.cursor = '';
+    hoveredId = null;
+    map.setFilter('tracts-hover', ['==', 'GEOID', '']);
+  });
+
+  // click
+  map.on('click', 'tracts-fill', e => {
+    if (!e.features.length) return;
+    renderTractInfo(e.features[0].properties);
+  });
+}
+
+// ══════════════════════════════════════════════
+//  MAIN
+// ══════════════════════════════════════════════
+map.on('load', async () => {
+  const loadingEl = document.getElementById('loading');
+  try {
+    loadingEl.querySelector('div:last-child').textContent = 'Fetching allergen data…';
+
+    const [harrisonData, allergenFeatures] = await Promise.all([
+      fetchOpenMeteo(HARRISON.lat, HARRISON.lng),
+      fetchAllergenGrid()
+    ]);
+
+    addAllergenLayer(allergenFeatures);
+
+    const hIdx = currentHourIdx(harrisonData.hourly.time);
+    renderInfoPanel(harrisonData, hIdx);
+
+    loadingEl.querySelector('div:last-child').textContent = 'Fetching census tract data…';
+    let tractGeo, acsData;
+
+    try {
+      [tractGeo, acsData] = await Promise.all([
+        fetchTractBoundaries(),
+        fetchACSData()
+      ]);
+      tractGeoJSON = joinACS(tractGeo, acsData);
+    } catch (censusErr) {
+      console.warn('Census data unavailable:', censusErr.message);
+      document.getElementById('key-warning').style.display = 'block';
+      // still load boundaries without ACS
+      try {
+        tractGeo     = await fetchTractBoundaries();
+        tractGeoJSON = tractGeo;
+      } catch (_) { /* silently skip tracts */ }
+    }
+
+    if (tractGeoJSON) {
+      addTractLayers(tractGeoJSON);
+      updateSESLayer(activeSES);
+      setupControls();
+    }
+
+    // Harrison marker
+    new maplibregl.Marker({ color: '#e63946' })
+      .setLngLat([HARRISON.lng, HARRISON.lat])
+      .setPopup(new maplibregl.Popup({ offset: 25 })
+        .setHTML('<strong>Harrison, NY</strong><br>Allergen monitoring center'))
+      .addTo(map);
+
+    renderLegend(activeSES);
+    loadingEl.style.display = 'none';
+
+  } catch (err) {
+    loadingEl.innerHTML = `<strong>Error</strong><br><small>${err.message}</small>`;
+  }
+});
+</script>
 </body>
 </html>
