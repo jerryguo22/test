@@ -326,9 +326,9 @@ async function fetchAllergenGrid() {
 }
 
 async function fetchCountyBoundaries() {
-  // NY has 62 counties — no pagination needed
+  // STATE field is a string — must quote the value: STATE='36'
   const url = `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer/1/query`
-    + `?where=STATE%3D${STATE}`
+    + `?where=STATE%3D%27${STATE}%27`
     + `&outFields=COUNTY,GEOID,NAME`
     + `&outSR=4326&f=geojson&returnGeometry=true`;
   const r = await fetch(url);
@@ -613,21 +613,24 @@ map.on('load', async () => {
     renderInfoPanel(harrisonData, hIdx);
 
     loadingEl.querySelector('div:last-child').textContent = 'Fetching NY county data…';
-    let tractGeo, acsData;
 
-    try {
-      [tractGeo, acsData] = await Promise.all([
-        fetchCountyBoundaries(),
-        fetchACSData()
-      ]);
-      tractGeoJSON = joinACS(tractGeo, acsData);
-    } catch (censusErr) {
-      console.warn('Census data unavailable:', censusErr.message);
-      document.getElementById('key-warning').style.display = 'block';
-      try {
-        tractGeo     = await fetchCountyBoundaries();
-        tractGeoJSON = tractGeo;
-      } catch (_) { /* silently skip counties */ }
+    // Fetch boundaries and ACS data independently so one failure doesn't block the other
+    const [countyGeoResult, acsResult] = await Promise.allSettled([
+      fetchCountyBoundaries(),
+      fetchACSData()
+    ]);
+
+    if (countyGeoResult.status === 'fulfilled') {
+      const countyGeo = countyGeoResult.value;
+      if (acsResult.status === 'fulfilled') {
+        tractGeoJSON = joinACS(countyGeo, acsResult.value);
+      } else {
+        console.warn('ACS data failed:', acsResult.reason?.message);
+        document.getElementById('key-warning').style.display = 'block';
+        tractGeoJSON = countyGeo; // show boundaries without color
+      }
+    } else {
+      console.warn('County boundaries failed:', countyGeoResult.reason?.message);
     }
 
     if (tractGeoJSON) {
