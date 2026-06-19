@@ -116,7 +116,7 @@
 <div id="map"></div>
 <div id="loading"><div class="spinner"></div>Loading data…</div>
 
-<!-- Left: allergen readings + clicked tract info -->
+<!-- Left: allergen readings + clicked county info -->
 <div id="info-panel" class="panel">
   <h2>Harrison, NY</h2>
   <div class="ts" id="ts"></div>
@@ -128,13 +128,12 @@
   <div id="aqi-rows"></div>
 
   <hr class="divider">
-  <div id="tract-info">
-    <div class="section">Census Tract (ACS 2023)</div>
-    <div class="tract-name" id="tract-name"></div>
-    <div id="tract-rows"></div>
-    <div style="font-size:10px;color:#bbb;margin-top:8px;">Click a tract to explore</div>
+  <div id="county-info" style="display:none">
+    <div class="section">County (ACS 2023)</div>
+    <div class="tract-name" id="county-name"></div>
+    <div id="county-rows"></div>
   </div>
-  <div id="tract-hint" style="font-size:11px;color:#bbb;">Click any tract to see socioeconomic data.</div>
+  <div id="county-hint" style="font-size:11px;color:#bbb;">Click any county to see socioeconomic data.</div>
 </div>
 
 <!-- Right: layer controls -->
@@ -166,7 +165,7 @@
   </div>
 
   <div class="note">
-    ~5,200 tracts · ACS 5-year 2023.<br>
+    62 counties · ACS 5-year 2023.<br>
     No key? Get one free at
     <a href="https://api.census.gov/data/key_signup.html" target="_blank">api.census.gov</a>
     — add it to <code>CENSUS_API_KEY</code> in the script.
@@ -326,37 +325,22 @@ async function fetchAllergenGrid() {
   }));
 }
 
-async function fetchTractBoundaries() {
-  const base = `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/0/query`
+async function fetchCountyBoundaries() {
+  // NY has 62 counties — no pagination needed
+  const url = `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer/1/query`
     + `?where=STATE%3D${STATE}`
-    + `&outFields=TRACT,GEOID,NAME`
-    + `&outSR=4326&f=geojson&returnGeometry=true&resultRecordCount=2000`;
-
-  // Get total tract count first, then parallel-fetch all pages
-  const countRes = await fetch(
-    `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/0/query`
-    + `?where=STATE%3D${STATE}&returnCountOnly=true&f=json`
-  );
-  if (!countRes.ok) throw new Error(`TIGERweb count ${countRes.status}`);
-  const { count } = await countRes.json();
-
-  const pages = Math.ceil(count / 2000);
-  const batches = await Promise.all(
-    Array.from({ length: pages }, (_, i) =>
-      fetch(`${base}&resultOffset=${i * 2000}`)
-        .then(r => { if (!r.ok) throw new Error(`TIGERweb page ${i} ${r.status}`); return r.json(); })
-        .then(d => d.features || [])
-    )
-  );
-
-  return { type: 'FeatureCollection', features: batches.flat() };
+    + `&outFields=COUNTY,GEOID,NAME`
+    + `&outSR=4326&f=geojson&returnGeometry=true`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`TIGERweb counties ${r.status}`);
+  return r.json();
 }
 
 async function fetchACSData() {
   const key   = CENSUS_API_KEY ? `&key=${CENSUS_API_KEY}` : '';
   const vars  = 'B19013_001E,B17001_002E,B17001_001E,B25035_001E';
   const url   = `https://api.census.gov/data/2023/acs/acs5`
-    + `?get=NAME,${vars}&for=tract:*&in=state:${STATE}${key}`;
+    + `?get=NAME,${vars}&for=county:*&in=state:${STATE}${key}`;
   const r = await fetch(url);
   if (!r.ok) throw new Error(`Census API ${r.status}`);
   const rows    = await r.json();
@@ -365,9 +349,9 @@ async function fetchACSData() {
   rows.slice(1).forEach(row => {
     const obj    = {};
     headers.forEach((h, i) => obj[h] = row[i]);
+    // County GEOID = state (2) + county (3) = 5 chars
     const geoid  = String(obj.state).padStart(2,'0')
-                 + String(obj.county).padStart(3,'0')
-                 + String(obj.tract).padStart(6,'0');
+                 + String(obj.county).padStart(3,'0');
     const income = parseFloat(obj.B19013_001E);
     const povN   = parseFloat(obj.B17001_002E);
     const povD   = parseFloat(obj.B17001_001E);
@@ -391,7 +375,7 @@ async function fetchNeighborBoundaries() {
 
 function joinACS(geo, acsMap) {
   geo.features.forEach(f => {
-    const geoid = String(f.properties.GEOID).padStart(11,'0');
+    const geoid = String(f.properties.GEOID).padStart(5,'0');
     const acs   = acsMap[geoid];
     if (acs) Object.assign(f.properties, acs);
     else     Object.assign(f.properties, { income: null, poverty_rate: null, year_built: null });
@@ -448,38 +432,38 @@ function addAllergenLayer(features) {
   });
 }
 
-function addTractLayers(geo) {
-  map.addSource('tracts', { type: 'geojson', data: geo });
+function addCountyLayers(geo) {
+  map.addSource('counties', { type: 'geojson', data: geo });
 
   // fill — choropleth; color set by updateSESLayer()
   map.addLayer({
-    id: 'tracts-fill', type: 'fill', source: 'tracts',
-    paint: { 'fill-opacity': 0.55 }
+    id: 'counties-fill', type: 'fill', source: 'counties',
+    paint: { 'fill-opacity': 0.72 }
   }, 'allergen-heat'); // insert below heatmap
 
   // outline
   map.addLayer({
-    id: 'tracts-outline', type: 'line', source: 'tracts',
-    paint: { 'line-color': '#555', 'line-width': 0.4, 'line-opacity': 0.6 }
+    id: 'counties-outline', type: 'line', source: 'counties',
+    paint: { 'line-color': '#333', 'line-width': 0.8, 'line-opacity': 0.8 }
   });
 
   // highlight on hover
   map.addLayer({
-    id: 'tracts-hover', type: 'line', source: 'tracts',
-    paint: { 'line-color': '#222', 'line-width': 2 },
+    id: 'counties-hover', type: 'line', source: 'counties',
+    paint: { 'line-color': '#111', 'line-width': 2.5 },
     filter: ['==', 'GEOID', '']
   });
 }
 
 function updateSESLayer(key) {
   if (key === 'none') {
-    map.setPaintProperty('tracts-fill', 'fill-color', 'rgba(0,0,0,0)');
+    map.setPaintProperty('counties-fill', 'fill-color', 'rgba(0,0,0,0)');
     return;
   }
   const def = SES[key];
-  map.setPaintProperty('tracts-fill', 'fill-color', [
+  map.setPaintProperty('counties-fill', 'fill-color', [
     'case',
-    ['==', ['get', def.field], null], '#dddddd',
+    ['==', ['get', def.field], null], '#cccccc',
     def.paint
   ]);
 }
@@ -542,19 +526,18 @@ function renderInfoPanel(data, idx) {
   document.getElementById('info-panel').style.display = 'block';
 }
 
-function renderTractInfo(props) {
+function renderCountyInfo(props) {
   const fmt = (v, fn) => (v != null ? fn(v) : '—');
   const incomeFmt = v => '$' + Math.round(v).toLocaleString();
   const povFmt    = v => (v * 100).toFixed(1) + '%';
   const yrFmt     = v => Math.round(v).toString();
 
-  // simple risk label based on income + poverty
   let risk = 'Low', riskColor = '#52c41a', riskBg = '#f6ffed';
-  if (props.income != null && props.income < 80000) { risk = 'Elevated'; riskColor = '#fa8c16'; riskBg = '#fff7e6'; }
+  if (props.income != null && props.income < 60000) { risk = 'Elevated'; riskColor = '#fa8c16'; riskBg = '#fff7e6'; }
   if (props.poverty_rate != null && props.poverty_rate > 0.15) { risk = 'High'; riskColor = '#f5222d'; riskBg = '#fff1f0'; }
 
-  document.getElementById('tract-name').textContent = props.name || `Tract ${props.TRACT}`;
-  document.getElementById('tract-rows').innerHTML = `
+  document.getElementById('county-name').textContent = props.name || `County ${props.COUNTY}`;
+  document.getElementById('county-rows').innerHTML = `
     <div class="risk-badge" style="color:${riskColor};background:${riskBg};">
       ${risk} allergen health risk
     </div>
@@ -563,8 +546,8 @@ function renderTractInfo(props) {
     <div class="row"><span>Median Year Built</span><b>${fmt(props.year_built, yrFmt)}</b></div>
   `;
 
-  document.getElementById('tract-info').style.display = 'block';
-  document.getElementById('tract-hint').style.display = 'none';
+  document.getElementById('county-info').style.display = 'block';
+  document.getElementById('county-hint').style.display = 'none';
 }
 
 // ══════════════════════════════════════════════
@@ -587,25 +570,25 @@ function setupControls() {
 
   // hover
   let hoveredId = null;
-  map.on('mousemove', 'tracts-fill', e => {
+  map.on('mousemove', 'counties-fill', e => {
     if (!e.features.length) return;
     map.getCanvas().style.cursor = 'pointer';
     const geoid = e.features[0].properties.GEOID;
     if (geoid !== hoveredId) {
       hoveredId = geoid;
-      map.setFilter('tracts-hover', ['==', 'GEOID', geoid]);
+      map.setFilter('counties-hover', ['==', 'GEOID', geoid]);
     }
   });
-  map.on('mouseleave', 'tracts-fill', () => {
+  map.on('mouseleave', 'counties-fill', () => {
     map.getCanvas().style.cursor = '';
     hoveredId = null;
-    map.setFilter('tracts-hover', ['==', 'GEOID', '']);
+    map.setFilter('counties-hover', ['==', 'GEOID', '']);
   });
 
   // click
-  map.on('click', 'tracts-fill', e => {
+  map.on('click', 'counties-fill', e => {
     if (!e.features.length) return;
-    renderTractInfo(e.features[0].properties);
+    renderCountyInfo(e.features[0].properties);
   });
 }
 
@@ -629,27 +612,26 @@ map.on('load', async () => {
     const hIdx = currentHourIdx(harrisonData.hourly.time);
     renderInfoPanel(harrisonData, hIdx);
 
-    loadingEl.querySelector('div:last-child').textContent = 'Fetching ~5,200 NY census tracts…';
+    loadingEl.querySelector('div:last-child').textContent = 'Fetching NY county data…';
     let tractGeo, acsData;
 
     try {
       [tractGeo, acsData] = await Promise.all([
-        fetchTractBoundaries(),
+        fetchCountyBoundaries(),
         fetchACSData()
       ]);
       tractGeoJSON = joinACS(tractGeo, acsData);
     } catch (censusErr) {
       console.warn('Census data unavailable:', censusErr.message);
       document.getElementById('key-warning').style.display = 'block';
-      // still load boundaries without ACS
       try {
-        tractGeo     = await fetchTractBoundaries();
+        tractGeo     = await fetchCountyBoundaries();
         tractGeoJSON = tractGeo;
-      } catch (_) { /* silently skip tracts */ }
+      } catch (_) { /* silently skip counties */ }
     }
 
     if (tractGeoJSON) {
-      addTractLayers(tractGeoJSON);
+      addCountyLayers(tractGeoJSON);
       updateSESLayer(activeSES);
       setupControls();
     }
