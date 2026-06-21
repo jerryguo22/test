@@ -6,6 +6,7 @@
   <title>New York State — Allergen & Socioeconomic Map</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" />
   <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body, html { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
@@ -101,6 +102,25 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    /* ── scatter chart panel ── */
+    #scatter-panel {
+      position: absolute; bottom: 30px; left: 10px;
+      width: 310px;
+      padding: 10px 12px 8px;
+      display: none;
+    }
+    #scatter-panel h3 {
+      font-size: 11px; font-weight: 700; color: #444; margin-bottom: 6px;
+    }
+    #scatter-income-legend {
+      display: flex; gap: 6px; align-items: center;
+      font-size: 9px; color: #888; margin-top: 5px; flex-wrap: wrap;
+    }
+    .sil-swatch {
+      display: inline-block; width: 10px; height: 10px;
+      border-radius: 2px; flex-shrink: 0;
+    }
+
     /* ── key warning ── */
     #key-warning {
       position: absolute; bottom: 36px; left: 10px;
@@ -116,7 +136,7 @@
 <div id="map"></div>
 <div id="loading"><div class="spinner"></div>Loading data…</div>
 
-<!-- Left: allergen readings + clicked county info -->
+<!-- Left: allergen readings + clicked tract info -->
 <div id="info-panel" class="panel">
   <h2>Harrison, NY</h2>
   <div class="ts" id="ts"></div>
@@ -128,12 +148,12 @@
   <div id="aqi-rows"></div>
 
   <hr class="divider">
-  <div id="county-info" style="display:none">
-    <div class="section">County (ACS 2023)</div>
-    <div class="tract-name" id="county-name"></div>
-    <div id="county-rows"></div>
+  <div id="tract-info" style="display:none">
+    <div class="section">Census Tract (ACS 2023)</div>
+    <div class="tract-name" id="tract-name"></div>
+    <div id="tract-rows"></div>
   </div>
-  <div id="county-hint" style="font-size:11px;color:#bbb;">Click any county to see socioeconomic data.</div>
+  <div id="tract-hint" style="font-size:11px;color:#bbb;">Click any tract to see socioeconomic data.</div>
 </div>
 
 <!-- Right: layer controls -->
@@ -165,7 +185,7 @@
   </div>
 
   <div class="note">
-    62 counties · ACS 5-year 2023.<br>
+    ~5,200 census tracts · ACS 5-year 2023.<br>
     No key? Get one free at
     <a href="https://api.census.gov/data/key_signup.html" target="_blank">api.census.gov</a>
     — add it to <code>CENSUS_API_KEY</code> in the script.
@@ -174,6 +194,21 @@
 
 <!-- Bottom-right: legend -->
 <div id="legend" class="panel"></div>
+
+<!-- Bottom-left: scatter plot -->
+<div id="scatter-panel" class="panel">
+  <h3>Allergen Intensity vs Socioeconomic Factors</h3>
+  <canvas id="scatter-chart" width="286" height="190"></canvas>
+  <div id="scatter-income-legend">
+    <span>Income:</span>
+    <span class="sil-swatch" style="background:#eff3ff;border:1px solid #ccc"></span>&lt;$30K
+    <span class="sil-swatch" style="background:#bdd7e7"></span>$30–60K
+    <span class="sil-swatch" style="background:#6baed6"></span>$60–90K
+    <span class="sil-swatch" style="background:#2171b5"></span>$90–120K
+    <span class="sil-swatch" style="background:#084594"></span>$120K+
+    <span class="sil-swatch" style="background:#ccc"></span>No data
+  </div>
+</div>
 
 <!-- Bottom-left: key warning -->
 <div id="key-warning">
@@ -228,7 +263,9 @@ const SES = {
     format:   v => '$' + Math.round(v).toLocaleString(),
     lowLabel: '$30K', highLabel: '$150K+',
     gradient: 'linear-gradient(to right,#eff3ff,#bdd7e7,#6baed6,#2171b5,#084594)',
-    paint: ['interpolate', ['linear'], ['get', 'income'],
+    // coalesce maps null → -1, which hits the #cccccc stop (no-data grey)
+    paint: ['interpolate', ['linear'], ['coalesce', ['get', 'income'], -1],
+      -1,     '#cccccc',
       30000,  '#eff3ff',
       60000,  '#bdd7e7',
       90000,  '#6baed6',
@@ -242,7 +279,8 @@ const SES = {
     format:   v => (v * 100).toFixed(1) + '%',
     lowLabel: '0%', highLabel: '30%+',
     gradient: 'linear-gradient(to right,#fee5d9,#fcae91,#fb6a4a,#de2d26,#a50f15)',
-    paint: ['interpolate', ['linear'], ['get', 'poverty_rate'],
+    paint: ['interpolate', ['linear'], ['coalesce', ['get', 'poverty_rate'], -1],
+      -1,   '#cccccc',
       0,    '#fee5d9',
       0.05, '#fcae91',
       0.12, '#fb6a4a',
@@ -256,7 +294,8 @@ const SES = {
     format:   v => Math.round(v).toString(),
     lowLabel: '≤1940', highLabel: '2010+',
     gradient: 'linear-gradient(to right,#a63603,#e6550d,#fd8d3c,#fdbe85,#feedde)',
-    paint: ['interpolate', ['linear'], ['get', 'year_built'],
+    paint: ['interpolate', ['linear'], ['coalesce', ['get', 'year_built'], -1],
+      -1,   '#cccccc',
       1940, '#a63603',
       1960, '#e6550d',
       1980, '#fd8d3c',
@@ -266,8 +305,10 @@ const SES = {
   }
 };
 
-let activeSES   = 'income';
+let activeSES    = 'income';
 let tractGeoJSON = null;
+let scatterChart = null;
+let geoidToChartIdx = null;
 
 // ══════════════════════════════════════════════
 //  MAP
@@ -325,22 +366,45 @@ async function fetchAllergenGrid() {
   }));
 }
 
-async function fetchCountyBoundaries() {
-  // STATE field is a string — must quote the value: STATE='36'
-  const url = `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer/1/query`
-    + `?where=STATE%3D%27${STATE}%27`
-    + `&outFields=COUNTY,GEOID,NAME`
-    + `&outSR=4326&f=geojson&returnGeometry=true`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`TIGERweb counties ${r.status}`);
-  return r.json();
+async function fetchTractBoundaries() {
+  // STATE field in TIGERweb is a string type — must quote it: STATE='36'
+  const where = `STATE%3D%27${STATE}%27`;
+  const base = `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/0/query`
+    + `?where=${where}`
+    + `&outFields=TRACT,GEOID,NAME`
+    + `&outSR=4326&f=geojson&returnGeometry=true&resultRecordCount=2000`;
+
+  const countRes = await fetch(
+    `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/0/query`
+    + `?where=${where}&returnCountOnly=true&f=json`
+  );
+  if (!countRes.ok) throw new Error(`TIGERweb count ${countRes.status}`);
+  const countJson = await countRes.json();
+  // ArcGIS returns HTTP 200 with {error:{...}} on query failures
+  if (countJson.error) throw new Error(`TIGERweb: ${countJson.error.message}`);
+  const count = countJson.count;
+  if (!count) throw new Error('TIGERweb returned 0 tracts — check STATE filter');
+
+  const pages = Math.ceil(count / 2000);
+  const batches = await Promise.all(
+    Array.from({ length: pages }, (_, i) =>
+      fetch(`${base}&resultOffset=${i * 2000}`)
+        .then(r => { if (!r.ok) throw new Error(`TIGERweb page ${i} ${r.status}`); return r.json(); })
+        .then(d => {
+          if (d.error) throw new Error(`TIGERweb page ${i}: ${d.error.message}`);
+          return d.features || [];
+        })
+    )
+  );
+
+  return { type: 'FeatureCollection', features: batches.flat() };
 }
 
 async function fetchACSData() {
   const key   = CENSUS_API_KEY ? `&key=${CENSUS_API_KEY}` : '';
   const vars  = 'B19013_001E,B17001_002E,B17001_001E,B25035_001E';
   const url   = `https://api.census.gov/data/2023/acs/acs5`
-    + `?get=NAME,${vars}&for=county:*&in=state:${STATE}${key}`;
+    + `?get=NAME,${vars}&for=tract:*&in=state:${STATE}${key}`;
   const r = await fetch(url);
   if (!r.ok) throw new Error(`Census API ${r.status}`);
   const rows    = await r.json();
@@ -349,18 +413,19 @@ async function fetchACSData() {
   rows.slice(1).forEach(row => {
     const obj    = {};
     headers.forEach((h, i) => obj[h] = row[i]);
-    // County GEOID = state (2) + county (3) = 5 chars
+    // Tract GEOID = state (2) + county (3) + tract (6) = 11 chars
     const geoid  = String(obj.state).padStart(2,'0')
-                 + String(obj.county).padStart(3,'0');
+                 + String(obj.county).padStart(3,'0')
+                 + String(obj.tract).padStart(6,'0');
     const income = parseFloat(obj.B19013_001E);
     const povN   = parseFloat(obj.B17001_002E);
     const povD   = parseFloat(obj.B17001_001E);
     const yrBlt  = parseFloat(obj.B25035_001E);
     map[geoid] = {
-      income:      income  > 0 ? income  : null,
-      poverty_rate: (povD  > 0) ? povN / povD : null,
-      year_built:  yrBlt  > 0 ? yrBlt  : null,
-      name:        obj.NAME
+      income:       income > 0 ? income        : -1,
+      poverty_rate: povD   > 0 ? povN / povD   : -1,
+      year_built:   yrBlt  > 0 ? yrBlt         : -1,
+      name:         obj.NAME
     };
   });
   return map;
@@ -375,12 +440,152 @@ async function fetchNeighborBoundaries() {
 
 function joinACS(geo, acsMap) {
   geo.features.forEach(f => {
-    const geoid = String(f.properties.GEOID).padStart(5,'0');
+    const geoid = String(f.properties.GEOID).padStart(11,'0');
     const acs   = acsMap[geoid];
     if (acs) Object.assign(f.properties, acs);
-    else     Object.assign(f.properties, { income: null, poverty_rate: null, year_built: null });
+    else     Object.assign(f.properties, { income: -1, poverty_rate: -1, year_built: -1 });
   });
   return geo;
+}
+
+// ══════════════════════════════════════════════
+//  ALLERGEN IDW PER TRACT
+// ══════════════════════════════════════════════
+function tractCentroid(feature) {
+  const geom = feature.geometry;
+  const ring = geom.type === 'Polygon'
+    ? geom.coordinates[0]
+    : geom.coordinates[0][0]; // first ring of first polygon in MultiPolygon
+  let lngSum = 0, latSum = 0;
+  for (const [x, y] of ring) { lngSum += x; latSum += y; }
+  return [lngSum / ring.length, latSum / ring.length];
+}
+
+const SIGMA = 1.5; // bandwidth in degrees (~150 km); matches heatmap visual radius at zoom 7
+const TWO_SIGMA2 = 2 * SIGMA * SIGMA;
+
+function gaussianAllergen(centroid, allergenFeatures) {
+  let num = 0, den = 0;
+  for (const f of allergenFeatures) {
+    const [clng, clat] = f.geometry.coordinates;
+    const dx = centroid[0] - clng, dy = centroid[1] - clat;
+    const d2 = dx * dx + dy * dy;
+    const w = Math.exp(-d2 / TWO_SIGMA2); // Gaussian kernel
+    num += w * f.properties.score;
+    den += w;
+  }
+  return den > 0 ? num / den : 0;
+}
+
+function attachAllergenToTracts(tractGeo, allergenFeatures) {
+  // First pass: compute raw Gaussian scores
+  tractGeo.features.forEach(f => {
+    f.properties.allergen = f.geometry
+      ? gaussianAllergen(tractCentroid(f), allergenFeatures)
+      : 0;
+  });
+
+  // Second pass: min-max normalize to [0, 1] so 0% = least allergenic tract, 100% = most
+  const scores = tractGeo.features.map(f => f.properties.allergen);
+  const minS = Math.min(...scores);
+  const maxS = Math.max(...scores);
+  const range = maxS - minS || 1;
+  tractGeo.features.forEach(f => {
+    f.properties.allergen = (f.properties.allergen - minS) / range;
+  });
+}
+
+// ══════════════════════════════════════════════
+//  SCATTER CHART
+// ══════════════════════════════════════════════
+function incomeColor(income, alpha) {
+  const a = alpha ?? 0.6;
+  if (income < 0)      return `rgba(204,204,204,${a})`;
+  if (income < 30000)  return `rgba(239,243,255,${a})`;
+  if (income < 60000)  return `rgba(189,215,231,${a})`;
+  if (income < 90000)  return `rgba(107,174,214,${a})`;
+  if (income < 120000) return `rgba(33,113,181,${a})`;
+  return                      `rgba(8,69,148,${a})`;
+}
+
+function buildScatterChart(tractGeo) {
+  const pts = [];
+  tractGeo.features.forEach(f => {
+    const p = f.properties;
+    if (p.poverty_rate < 0 || p.allergen == null) return;
+    pts.push({
+      x: p.poverty_rate,
+      y: p.allergen,
+      geoid: String(p.GEOID),
+      name:  p.name || `Tract ${p.TRACT}`,
+      income:     p.income,
+      year_built: p.year_built,
+    });
+  });
+
+  geoidToChartIdx = new Map(pts.map((p, i) => [p.geoid, i]));
+
+  const ctx = document.getElementById('scatter-chart').getContext('2d');
+  scatterChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        data: pts,
+        pointRadius: 2,
+        pointHoverRadius: 5,
+        pointHoverBorderWidth: 1.5,
+        pointHoverBorderColor: '#222',
+        backgroundColor:      pts.map(p => incomeColor(p.income, 0.55)),
+        hoverBackgroundColor: pts.map(p => incomeColor(p.income, 1.0)),
+        borderColor: 'transparent',
+      }]
+    },
+    options: {
+      responsive: false,
+      animation: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ([item]) => item?.raw?.name || '',
+            label: ({ raw: d }) => {
+              const lines = [
+                `Allergen: ${(d.y * 100).toFixed(0)}%`,
+                `Poverty:  ${(d.x * 100).toFixed(1)}%`,
+              ];
+              if (d.income >= 0)     lines.push(`Income: $${Math.round(d.income).toLocaleString()}`);
+              if (d.year_built >= 0) lines.push(`Built: ${Math.round(d.year_built)}`);
+              return lines;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: 'Poverty Rate', font: { size: 9 }, color: '#888' },
+          ticks: { callback: v => (v * 100).toFixed(0) + '%', font: { size: 8 }, color: '#888', maxTicksLimit: 6 },
+          min: 0, max: 0.4,
+          grid: { color: '#f0f0f0' }
+        },
+        y: {
+          title: { display: true, text: 'Allergen Score', font: { size: 9 }, color: '#888' },
+          ticks: { callback: v => (v * 100).toFixed(0) + '%', font: { size: 8 }, color: '#888', maxTicksLimit: 5 },
+          min: 0, max: 1,
+          grid: { color: '#f0f0f0' }
+        }
+      },
+      onHover: (_, elements) => {
+        if (elements.length) {
+          const geoid = pts[elements[0].index].geoid;
+          map.setFilter('tracts-hover', ['==', ['get', 'GEOID'], geoid]);
+        } else {
+          map.setFilter('tracts-hover', ['==', ['get', 'GEOID'], '']);
+        }
+      }
+    }
+  });
+
+  document.getElementById('scatter-panel').style.display = 'block';
 }
 
 // ══════════════════════════════════════════════
@@ -415,7 +620,7 @@ function addAllergenLayer(features) {
   map.addLayer({
     id: 'allergen-heat', type: 'heatmap', source: 'allergen',
     paint: {
-      'heatmap-weight': ['get', 'score'],
+      'heatmap-weight': ['coalesce', ['get', 'score'], 0],
       'heatmap-intensity': 2.2,
       'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 5, 180, 7, 150, 10, 110, 13, 140],
       'heatmap-opacity': 0.72,
@@ -432,40 +637,33 @@ function addAllergenLayer(features) {
   });
 }
 
-function addCountyLayers(geo) {
-  map.addSource('counties', { type: 'geojson', data: geo });
+function addTractLayers(geo) {
+  map.addSource('tracts', { type: 'geojson', data: geo });
 
   // fill — choropleth; color set by updateSESLayer()
   map.addLayer({
-    id: 'counties-fill', type: 'fill', source: 'counties',
-    paint: { 'fill-opacity': 0.72 }
+    id: 'tracts-fill', type: 'fill', source: 'tracts',
+    paint: { 'fill-opacity': 0.65 }
   }, 'allergen-heat'); // insert below heatmap
 
   // outline
   map.addLayer({
-    id: 'counties-outline', type: 'line', source: 'counties',
-    paint: { 'line-color': '#333', 'line-width': 0.8, 'line-opacity': 0.8 }
+    id: 'tracts-outline', type: 'line', source: 'tracts',
+    paint: { 'line-color': '#444', 'line-width': 0.3, 'line-opacity': 0.5 }
   });
 
   // highlight on hover
   map.addLayer({
-    id: 'counties-hover', type: 'line', source: 'counties',
-    paint: { 'line-color': '#111', 'line-width': 2.5 },
-    filter: ['==', 'GEOID', '']
+    id: 'tracts-hover', type: 'line', source: 'tracts',
+    paint: { 'line-color': '#111', 'line-width': 2 },
+    filter: ['==', ['get', 'GEOID'], '']
   });
 }
 
 function updateSESLayer(key) {
-  if (key === 'none') {
-    map.setPaintProperty('counties-fill', 'fill-color', 'rgba(0,0,0,0)');
-    return;
-  }
-  const def = SES[key];
-  map.setPaintProperty('counties-fill', 'fill-color', [
-    'case',
-    ['==', ['get', def.field], null], '#cccccc',
-    def.paint
-  ]);
+  map.setPaintProperty('tracts-fill', 'fill-color',
+    key === 'none' ? 'rgba(0,0,0,0)' : SES[key].paint
+  );
 }
 
 // ══════════════════════════════════════════════
@@ -526,28 +724,32 @@ function renderInfoPanel(data, idx) {
   document.getElementById('info-panel').style.display = 'block';
 }
 
-function renderCountyInfo(props) {
-  const fmt = (v, fn) => (v != null ? fn(v) : '—');
+function renderTractInfo(props) {
+  // -1 is the no-data sentinel; treat it as missing
+  const valid = (v) => v != null && v >= 0;
+  const fmt = (v, fn) => valid(v) ? fn(v) : '—';
   const incomeFmt = v => '$' + Math.round(v).toLocaleString();
   const povFmt    = v => (v * 100).toFixed(1) + '%';
   const yrFmt     = v => Math.round(v).toString();
 
   let risk = 'Low', riskColor = '#52c41a', riskBg = '#f6ffed';
-  if (props.income != null && props.income < 60000) { risk = 'Elevated'; riskColor = '#fa8c16'; riskBg = '#fff7e6'; }
-  if (props.poverty_rate != null && props.poverty_rate > 0.15) { risk = 'High'; riskColor = '#f5222d'; riskBg = '#fff1f0'; }
+  if (valid(props.income) && props.income < 60000) { risk = 'Elevated'; riskColor = '#fa8c16'; riskBg = '#fff7e6'; }
+  if (valid(props.poverty_rate) && props.poverty_rate > 0.15) { risk = 'High'; riskColor = '#f5222d'; riskBg = '#fff1f0'; }
 
-  document.getElementById('county-name').textContent = props.name || `County ${props.COUNTY}`;
-  document.getElementById('county-rows').innerHTML = `
+  document.getElementById('tract-name').textContent = props.name || `Tract ${props.TRACT}`;
+  const allergenFmt = v => (v * 100).toFixed(0) + '%';
+  document.getElementById('tract-rows').innerHTML = `
     <div class="risk-badge" style="color:${riskColor};background:${riskBg};">
       ${risk} allergen health risk
     </div>
+    <div class="row"><span>Allergen Score</span><b>${props.allergen != null ? allergenFmt(props.allergen) : '—'}</b></div>
     <div class="row"><span>Median Income</span><b>${fmt(props.income, incomeFmt)}</b></div>
     <div class="row"><span>Poverty Rate</span><b>${fmt(props.poverty_rate, povFmt)}</b></div>
     <div class="row"><span>Median Year Built</span><b>${fmt(props.year_built, yrFmt)}</b></div>
   `;
 
-  document.getElementById('county-info').style.display = 'block';
-  document.getElementById('county-hint').style.display = 'none';
+  document.getElementById('tract-info').style.display = 'block';
+  document.getElementById('tract-hint').style.display = 'none';
 }
 
 // ══════════════════════════════════════════════
@@ -570,25 +772,37 @@ function setupControls() {
 
   // hover
   let hoveredId = null;
-  map.on('mousemove', 'counties-fill', e => {
+  map.on('mousemove', 'tracts-fill', e => {
     if (!e.features.length) return;
     map.getCanvas().style.cursor = 'pointer';
-    const geoid = e.features[0].properties.GEOID;
+    const geoid = String(e.features[0].properties.GEOID);
     if (geoid !== hoveredId) {
       hoveredId = geoid;
-      map.setFilter('counties-hover', ['==', 'GEOID', geoid]);
+      map.setFilter('tracts-hover', ['==', ['get', 'GEOID'], geoid]);
+      // cross-highlight corresponding scatter point
+      if (scatterChart && geoidToChartIdx) {
+        const idx = geoidToChartIdx.get(geoid);
+        if (idx !== undefined) {
+          scatterChart.tooltip.setActiveElements([{ datasetIndex: 0, index: idx }], { x: 0, y: 0 });
+          scatterChart.update('none');
+        }
+      }
     }
   });
-  map.on('mouseleave', 'counties-fill', () => {
+  map.on('mouseleave', 'tracts-fill', () => {
     map.getCanvas().style.cursor = '';
     hoveredId = null;
-    map.setFilter('counties-hover', ['==', 'GEOID', '']);
+    map.setFilter('tracts-hover', ['==', ['get', 'GEOID'], '']);
+    if (scatterChart) {
+      scatterChart.tooltip.setActiveElements([], {});
+      scatterChart.update('none');
+    }
   });
 
   // click
-  map.on('click', 'counties-fill', e => {
+  map.on('click', 'tracts-fill', e => {
     if (!e.features.length) return;
-    renderCountyInfo(e.features[0].properties);
+    renderTractInfo(e.features[0].properties);
   });
 }
 
@@ -612,31 +826,33 @@ map.on('load', async () => {
     const hIdx = currentHourIdx(harrisonData.hourly.time);
     renderInfoPanel(harrisonData, hIdx);
 
-    loadingEl.querySelector('div:last-child').textContent = 'Fetching NY county data…';
+    loadingEl.querySelector('div:last-child').textContent = 'Fetching ~5,200 NY census tracts…';
 
     // Fetch boundaries and ACS data independently so one failure doesn't block the other
-    const [countyGeoResult, acsResult] = await Promise.allSettled([
-      fetchCountyBoundaries(),
+    const [tractGeoResult, acsResult] = await Promise.allSettled([
+      fetchTractBoundaries(),
       fetchACSData()
     ]);
 
-    if (countyGeoResult.status === 'fulfilled') {
-      const countyGeo = countyGeoResult.value;
+    if (tractGeoResult.status === 'fulfilled') {
+      const tractGeo = tractGeoResult.value;
       if (acsResult.status === 'fulfilled') {
-        tractGeoJSON = joinACS(countyGeo, acsResult.value);
+        tractGeoJSON = joinACS(tractGeo, acsResult.value);
       } else {
         console.warn('ACS data failed:', acsResult.reason?.message);
         document.getElementById('key-warning').style.display = 'block';
-        tractGeoJSON = countyGeo; // show boundaries without color
+        tractGeoJSON = tractGeo; // show boundaries without color
       }
     } else {
-      console.warn('County boundaries failed:', countyGeoResult.reason?.message);
+      console.warn('Tract boundaries failed:', tractGeoResult.reason?.message);
     }
 
     if (tractGeoJSON) {
-      addCountyLayers(tractGeoJSON);
+      attachAllergenToTracts(tractGeoJSON, allergenFeatures);
+      addTractLayers(tractGeoJSON);
       updateSESLayer(activeSES);
       setupControls();
+      buildScatterChart(tractGeoJSON);
     }
 
     // Harrison marker
