@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NY Allergy Equity — Correlation Analysis</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f5f6f3;
+      color: #171b1a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 18px;
+      border-bottom: 1px solid #d7ddd8;
+      background: #ffffff;
+    }
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+    header p {
+      margin: 3px 0 0;
+      color: #64706a;
+      font-size: 12px;
+    }
+    a {
+      color: #0b6b63;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .lang-toggle {
+      min-height: 32px;
+      padding: 0 12px;
+      border: 1px solid #cbd5cf;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #171b1a;
+      font-size: 12px;
+      font-weight: 760;
+      cursor: pointer;
+    }
+    .lang-toggle:hover { background: #f5f6f3; }
+    main {
+      display: grid;
+      grid-template-columns: 320px minmax(520px, 1fr) 360px;
+      gap: 14px;
+      padding: 14px;
+    }
+    .panel {
+      border: 1px solid #d7ddd8;
+      border-radius: 4px;
+      background: #ffffff;
+    }
+    .controls,
+    .summary,
+    .table-panel {
+      padding: 16px;
+    }
+    .section-label {
+      margin: 0 0 8px;
+      color: #52605b;
+      font-size: 10px;
+      font-weight: 760;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      color: #4f5c56;
+      font-size: 12px;
+      font-weight: 720;
+    }
+    select {
+      width: 100%;
+      min-height: 38px;
+      padding: 0 10px;
+      border: 1px solid #d7ddd8;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #171b1a;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 620;
+    }
+    .fixed-value {
+      min-height: 38px;
+      padding: 9px 10px;
+      border: 1px solid #d7ddd8;
+      border-radius: 4px;
+      background: #f7faf8;
+      color: #171b1a;
+      font-size: 14px;
+      font-weight: 720;
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .metric {
+      padding: 10px;
+      border: 1px solid #e1e6e2;
+      border-radius: 4px;
+      background: #fbfcfb;
+    }
+    .metric span {
+      display: block;
+      color: #66706b;
+      font-size: 10px;
+      font-weight: 760;
+      text-transform: uppercase;
+    }
+    .metric strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 23px;
+      line-height: 1;
+    }
+    .chart-panel {
+      min-height: calc(100vh - 98px);
+      padding: 12px;
+    }
+    .chart-wrap {
+      position: relative;
+      height: calc(100vh - 142px);
+      min-height: 560px;
+    }
+    .note {
+      margin: 14px 0 0;
+      color: #66706b;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .insight {
+      margin-top: 14px;
+      padding: 12px;
+      border-left: 3px solid #0b6b63;
+      background: #eef7f4;
+      color: #294843;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .observations {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid #e1e6e2;
+    }
+    .observation-list {
+      display: grid;
+      gap: 8px;
+    }
+    .observation-item {
+      padding: 9px 10px;
+      border: 1px solid #e1e6e2;
+      border-radius: 4px;
+      background: #fbfcfb;
+      color: #3b4742;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .observation-item.active {
+      border-color: #0b6b63;
+      background: #eef7f4;
+      color: #213f3a;
+    }
+    .observation-item strong {
+      display: block;
+      margin-bottom: 2px;
+      color: #171b1a;
+      font-size: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th,
+    td {
+      padding: 8px 0;
+      border-bottom: 1px solid #e1e6e2;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      color: #66706b;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    td:last-child,
+    th:last-child {
+      text-align: right;
+    }
+    .tract-name {
+      max-width: 220px;
+      color: #28332f;
+      font-weight: 650;
+    }
+    @media (max-width: 1120px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+      .chart-panel {
+        min-height: auto;
+      }
+      .chart-wrap {
+        height: 560px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1 data-i18n="pageTitle">NY Allergy Equity Correlation Analysis</h1>
+      <p data-i18n="pageSubtitle">A focused view of allergen exposure against race/ethnicity, poverty, income, housing tenure, children, and older adults.</p>
+    </div>
+    <div class="header-actions">
+      <a href="index.html" data-i18n="backToMap">Back to map</a>
+      <a href="history.html" data-i18n="historyLink">History</a>
+      <button type="button" id="langToggle" class="lang-toggle">中文</button>
+    </div>
+  </header>
+
+  <main>
+    <aside class="panel controls">
+      <p class="section-label" data-i18n="variables">Core Indicators</p>
+      <label for="xSelect" data-i18n="xAxis">Equity indicator</label>
+      <select id="xSelect"></select>
+      <label data-i18n="yAxis">Outcome</label>
+      <div class="fixed-value" data-i18n="fixedOutcome">Allergen Exposure</div>
+      <p class="note" data-i18n="note">
+        Focused analysis: allergen exposure compared with race/ethnicity, poverty, income, renter share, children, and older adults.
+      </p>
+      <div class="observations">
+        <p class="section-label" data-i18n="observationsTitle">Key Observations</p>
+        <div class="observation-list" id="observationList"></div>
+      </div>
+      <div class="metric-grid">
+        <div class="metric"><span>Pearson r</span><strong id="pearsonValue">--</strong></div>
+        <div class="metric"><span>Spearman rho</span><strong id="spearmanValue">--</strong></div>
+        <div class="metric"><span data-i18n="tracts">Tracts</span><strong id="tractCount">--</strong></div>
+        <div class="metric"><span data-i18n="slope">Slope</span><strong id="slopeValue">--</strong></div>
+      </div>
+      <div class="insight" id="insightText" data-i18n="loading">Loading tract data...</div>
+    </aside>
+
+    <section class="panel chart-panel">
+      <div class="chart-wrap">
+        <canvas id="correlationChart"></canvas>
+      </div>
+    </section>
+
+    <aside class="panel table-panel">
+      <p class="section-label" data-i18n="highestValues">Highest Combined Values</p>
+      <table>
+        <thead>
+          <tr><th data-i18n="tract">Tract</th><th id="tableMetric">Value</th></tr>
+        </thead>
+        <tbody id="topRows"></tbody>
+      </table>
+    </aside>
+  </main>
+
+  <script>
+    const DATA_URL = 'data/ny-allergy-equity.geojson';
+    const I18N = {
+      en: {
+        documentTitle: 'NY Allergy Equity - Correlation Analysis',
+        pageTitle: 'NY Allergy Equity Core Correlations',
+        pageSubtitle: 'A focused view of allergen exposure against race/ethnicity, poverty, income, housing tenure, children, and older adults.',
+        backToMap: 'Back to map',
+        historyLink: 'History',
+        variables: 'Core Indicators',
+        xAxis: 'Equity indicator',
+        yAxis: 'Outcome',
+        fixedOutcome: 'Allergen Exposure',
+        pointColor: 'Point color',
+        note: 'Focused analysis: allergen exposure compared with race/ethnicity, poverty, income, renter share, children, and older adults. Each point is one census tract.',
+        tracts: 'Tracts',
+        slope: 'Slope',
+        loading: 'Loading tract data...',
+        observationsTitle: 'Key Observations',
+        highestValues: 'Highest Exposure Tracts',
+        tract: 'Tract',
+        regressionLine: 'Regression line',
+        equityRisk: 'Equity Risk',
+        unavailable: 'unavailable',
+        strength: { strong: 'strong', moderate: 'moderate', weak: 'weak', veryWeak: 'very weak' },
+        direction: { positive: 'positive', negative: 'negative' },
+        insight: (count, strength, direction, xLabel, yLabel, rho) =>
+          `${count} tracts show a ${strength} ${direction} Pearson relationship between ${xLabel} and ${yLabel}. Spearman rho is ${rho}, which reflects the rank-order relationship.`
+      },
+      zh: {
+        documentTitle: '纽约过敏公平 - 相关性分析',
+        pageTitle: '纽约过敏公平核心相关性',
+        pageSubtitle: '聚焦过敏暴露与种族/族裔、贫困、收入、租户比例、儿童人口、老年人口之间的关系。',
+        backToMap: '返回地图',
+        historyLink: '历史',
+        variables: '核心指标',
+        xAxis: '公平指标',
+        yAxis: '结果变量',
+        fixedOutcome: '过敏原暴露',
+        pointColor: '点颜色',
+        note: '聚焦分析：将过敏暴露分别与种族/族裔、贫困、收入中位数、租户比例、儿童人口、老年人口指标比较。每个点代表一个 census tract。',
+        tracts: 'Census tracts',
+        slope: '斜率',
+        loading: '正在加载 tract 数据...',
+        observationsTitle: '关键观察',
+        highestValues: '暴露最高的 tracts',
+        tract: 'Tract',
+        regressionLine: '回归线',
+        equityRisk: '公平风险',
+        unavailable: '不可用',
+        strength: { strong: '强', moderate: '中等', weak: '弱', veryWeak: '很弱' },
+        direction: { positive: '正向', negative: '负向' },
+        insight: (count, strength, direction, xLabel, yLabel, rho) =>
+          `${count} 个 tracts 显示 ${xLabel} 与 ${yLabel} 之间存在${strength}的${direction} Pearson 关系。Spearman rho 为 ${rho}，表示排序关系。`
+      }
+    };
+
+    const queryParams = new URLSearchParams(window.location.search);
+    let currentLang = queryParams.get('lang') || localStorage.getItem('allergyEquityLang') || 'en';
+    if (!I18N[currentLang]) currentLang = 'en';
+
+    function t(key) {
+      return I18N[currentLang][key] || I18N.en[key] || key;
+    }
+
+    function labelText(value) {
+      return typeof value === 'object' ? (value[currentLang] || value.en) : value;
+    }
+
+    const OBSERVATIONS = [
+      {
+        key: 'people_of_color_pct',
+        title: { en: 'Race/ethnicity is the strongest pattern', zh: '种族/族裔是最强的相关模式' },
+        body: {
+          en: 'People of color share has the strongest association with exposure (Pearson r = 0.61, Spearman rho = 0.64).',
+          zh: '有色人种比例与过敏暴露的关系最强（Pearson r = 0.61，Spearman rho = 0.64）。'
+        }
+      },
+      {
+        key: 'renter_pct',
+        title: { en: 'Renter share is the next strongest socioeconomic signal', zh: '租户比例是第二明显的社会经济信号' },
+        body: {
+          en: 'Renter share shows a moderate positive relationship with exposure (r = 0.37).',
+          zh: '租户比例与暴露呈中等正相关（r = 0.37）。'
+        }
+      },
+      {
+        key: 'income',
+        title: { en: 'Income is positive, but likely spatially confounded', zh: '收入呈正相关，但可能受空间格局影响' },
+        body: {
+          en: 'Median income is weakly positive (r = 0.23), so it should be interpreted with geography in mind.',
+          zh: '收入中位数呈弱正相关（r = 0.23），解释时需要考虑地理空间格局。'
+        }
+      },
+      {
+        key: 'poverty_rate',
+        title: { en: 'Poverty is not the main exposure signal here', zh: '贫困率在这里不是主要暴露信号' },
+        body: {
+          en: 'Poverty has almost no linear relationship with exposure in this dataset (r = 0.03).',
+          zh: '在这份数据里，贫困率与过敏暴露几乎没有线性关系（r = 0.03）。'
+        }
+      },
+      {
+        key: 'under18_pct',
+        title: { en: 'Children are not driving the exposure pattern', zh: '儿童比例不是暴露格局的主要驱动' },
+        body: {
+          en: 'Children under 18 show a very weak relationship with exposure (r = 0.05).',
+          zh: '18 岁以下儿童比例与暴露关系很弱（r = 0.05）。'
+        }
+      },
+      {
+        key: 'over65_pct',
+        title: { en: 'Older-adult share trends slightly lower', zh: '老年人比例呈轻微负相关' },
+        body: {
+          en: 'Older adults 65+ show a weak negative relationship with exposure (r = -0.17).',
+          zh: '65 岁及以上老年人比例与暴露呈弱负相关（r = -0.17）。'
+        }
+      }
+    ];
+
+    const VARIABLES = {
+      exposure: {
+        label: { en: 'Allergen Exposure', zh: '过敏原暴露' },
+        field: 'exposure',
+        format: v => `${(v * 100).toFixed(1)}%`,
+        min: 0,
+        max: 0.35
+      },
+      equity_risk: {
+        label: { en: 'Allergy Equity Risk', zh: '过敏公平风险' },
+        field: 'equity_risk',
+        format: v => `${(v * 100).toFixed(1)}%`,
+        min: 0,
+        max: 0.8
+      },
+      vulnerability: {
+        label: { en: 'Social Vulnerability', zh: '社会脆弱性' },
+        field: 'vulnerability',
+        format: v => `${(v * 100).toFixed(1)}%`,
+        min: 0,
+        max: 1
+      },
+      poverty_rate: {
+        label: { en: 'Poverty Rate', zh: '贫困率' },
+        field: 'poverty_rate',
+        format: v => `${(v * 100).toFixed(1)}%`,
+        min: 0,
+        max: 0.6
+      },
+      income: {
+        label: { en: 'Median Income', zh: '收入中位数' },
+        field: 'income',
+        format: v => `$${Math.round(v).toLocaleString()}`,
+        min: 0,
+        max: 250000
+      },
+      people_of_color_pct: {
+        label: { en: 'People of Color Share', zh: '有色人种比例' },
+        field: 'people_of_color_pct',
+        format: v => `${(v * 100).toFixed(1)}%`,
+        min: 0,
+        max: 1
+      },
+      renter_pct: {
+        label: { en: 'Renter Share', zh: '租户比例' },
+        field: 'renter_pct',
+        format: v => `${(v * 100).toFixed(1)}%`,
+        min: 0,
+        max: 1
+      },
+      under18_pct: {
+        label: { en: 'Children Under 18', zh: '18 岁以下儿童' },
+        field: 'under18_pct',
+        format: v => `${(v * 100).toFixed(1)}%`,
+        min: 0,
+        max: 0.45
+      },
+      over65_pct: {
+        label: { en: 'Older Adults 65+', zh: '65 岁及以上老年人' },
+        field: 'over65_pct',
+        format: v => `${(v * 100).toFixed(1)}%`,
+        min: 0,
+        max: 0.45
+      },
+      estimated_pm25_average: {
+        label: { en: 'Estimated PM2.5 Avg', zh: 'PM2.5 平均估计' },
+        field: 'estimated_pm25_average',
+        format: v => `${v.toFixed(1)} µg/m³`,
+        min: 0,
+        max: 20
+      },
+      estimated_aqi_average: {
+        label: { en: 'Estimated AQI Avg', zh: 'AQI 平均估计' },
+        field: 'estimated_aqi_average',
+        format: v => `${v.toFixed(0)}`,
+        min: 0,
+        max: 100
+      },
+      estimated_ozone_average: {
+        label: { en: 'Estimated Ozone Avg', zh: '臭氧平均估计' },
+        field: 'estimated_ozone_average',
+        format: v => `${v.toFixed(1)}`,
+        min: 40,
+        max: 120
+      },
+      year_built: {
+        label: { en: 'Median Year Built', zh: '住房建造年份中位数' },
+        field: 'year_built',
+        format: v => `${Math.round(v)}`,
+        min: 1900,
+        max: 2025
+      }
+    };
+    const CORE_INDICATORS = ['people_of_color_pct', 'poverty_rate', 'income', 'renter_pct', 'under18_pct', 'over65_pct'];
+    const OUTCOME_KEY = 'exposure';
+
+    let rows = [];
+    let chart = null;
+
+    function valueOf(row, key) {
+      const value = row[VARIABLES[key].field];
+      return Number.isFinite(value) && value >= 0 ? value : null;
+    }
+
+    function mean(values) {
+      return values.reduce((sum, value) => sum + value, 0) / values.length;
+    }
+
+    function pearson(points) {
+      if (points.length < 3) return null;
+      const xs = points.map(p => p.x);
+      const ys = points.map(p => p.y);
+      const mx = mean(xs);
+      const my = mean(ys);
+      let numerator = 0;
+      let xDen = 0;
+      let yDen = 0;
+      points.forEach(p => {
+        const dx = p.x - mx;
+        const dy = p.y - my;
+        numerator += dx * dy;
+        xDen += dx * dx;
+        yDen += dy * dy;
+      });
+      return xDen && yDen ? numerator / Math.sqrt(xDen * yDen) : null;
+    }
+
+    function rankValues(values) {
+      const sorted = values.map((value, index) => ({ value, index })).sort((a, b) => a.value - b.value);
+      const ranks = new Array(values.length);
+      for (let i = 0; i < sorted.length;) {
+        let j = i + 1;
+        while (j < sorted.length && sorted[j].value === sorted[i].value) j += 1;
+        const rank = (i + j + 1) / 2;
+        for (let k = i; k < j; k += 1) ranks[sorted[k].index] = rank;
+        i = j;
+      }
+      return ranks;
+    }
+
+    function spearman(points) {
+      const xr = rankValues(points.map(p => p.x));
+      const yr = rankValues(points.map(p => p.y));
+      return pearson(xr.map((x, index) => ({ x, y: yr[index] })));
+    }
+
+    function regression(points) {
+      const mx = mean(points.map(p => p.x));
+      const my = mean(points.map(p => p.y));
+      let numerator = 0;
+      let denominator = 0;
+      points.forEach(p => {
+        numerator += (p.x - mx) * (p.y - my);
+        denominator += (p.x - mx) ** 2;
+      });
+      const slope = denominator ? numerator / denominator : 0;
+      return { slope, intercept: my - slope * mx };
+    }
+
+    function colorFor(value, key) {
+      if (value == null) return 'rgba(180,180,180,0.45)';
+      const def = VARIABLES[key];
+      const t = Math.max(0, Math.min(1, (value - def.min) / (def.max - def.min || 1)));
+      const hue = 150 - t * 150;
+      return `hsla(${hue}, 70%, 42%, 0.62)`;
+    }
+
+    function buildPoints(xKey, yKey, colorKey) {
+      return rows.map(row => {
+        const x = valueOf(row, xKey);
+        const y = valueOf(row, yKey);
+        if (x == null || y == null) return null;
+        return {
+          x,
+          y,
+          geoid: row.GEOID,
+          name: row.name || row.NAME || `Tract ${row.TRACT}`,
+          colorValue: valueOf(row, colorKey),
+          raw: row
+        };
+      }).filter(Boolean);
+    }
+
+    function applyLanguage() {
+      document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+      document.title = t('documentTitle');
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        el.textContent = t(el.dataset.i18n);
+      });
+      document.getElementById('langToggle').textContent = currentLang === 'en' ? '中文' : 'English';
+      refreshSelectLabels();
+      updateObservations(document.getElementById('xSelect').value || 'people_of_color_pct');
+      if (chart) updateChart();
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('allergyEquityLang', lang);
+      applyLanguage();
+    }
+
+    function updateObservations(activeKey) {
+      const list = document.getElementById('observationList');
+      list.innerHTML = OBSERVATIONS.map(item => `
+        <div class="observation-item ${item.key === activeKey ? 'active' : ''}">
+          <strong>${labelText(item.title)}</strong>
+          ${labelText(item.body)}
+        </div>
+      `).join('');
+    }
+
+    function updateTable(points, xKey) {
+      const xDef = VARIABLES[xKey];
+      const yDef = VARIABLES[OUTCOME_KEY];
+      document.getElementById('tableMetric').textContent = labelText(yDef.label);
+      document.getElementById('topRows').innerHTML = [...points]
+        .sort((a, b) => b.y - a.y)
+        .slice(0, 12)
+        .map(point => `
+          <tr>
+            <td class="tract-name">${point.name}</td>
+            <td>${yDef.format(point.y)}<br><span style="color:#66706b;font-size:10px;">${labelText(xDef.label)}: ${xDef.format(point.x)}</span></td>
+          </tr>
+        `).join('');
+    }
+
+    function updateInsight(r, rho, points, xKey, yKey) {
+      const xLabel = labelText(VARIABLES[xKey].label);
+      const yLabel = labelText(VARIABLES[yKey].label);
+      const strengthKey = Math.abs(r) >= 0.6 ? 'strong' : Math.abs(r) >= 0.35 ? 'moderate' : Math.abs(r) >= 0.15 ? 'weak' : 'veryWeak';
+      const directionKey = r >= 0 ? 'positive' : 'negative';
+      const rhoText = rho == null ? t('unavailable') : rho.toFixed(2);
+      document.getElementById('insightText').textContent = I18N[currentLang].insight(
+        points.length.toLocaleString(),
+        I18N[currentLang].strength[strengthKey],
+        I18N[currentLang].direction[directionKey],
+        xLabel,
+        yLabel,
+        rhoText
+      );
+    }
+
+    function updateChart() {
+      const xKey = document.getElementById('xSelect').value;
+      const yKey = OUTCOME_KEY;
+      const colorKey = xKey;
+      const xDef = VARIABLES[xKey];
+      const yDef = VARIABLES[yKey];
+      const points = buildPoints(xKey, yKey, colorKey);
+      const r = pearson(points);
+      const rho = spearman(points);
+      const line = regression(points);
+      const linePoints = [
+        { x: xDef.min, y: line.intercept + line.slope * xDef.min },
+        { x: xDef.max, y: line.intercept + line.slope * xDef.max }
+      ];
+
+      document.getElementById('pearsonValue').textContent = r == null ? '--' : r.toFixed(2);
+      document.getElementById('spearmanValue').textContent = rho == null ? '--' : rho.toFixed(2);
+      document.getElementById('tractCount').textContent = points.length.toLocaleString();
+      document.getElementById('slopeValue').textContent = line.slope.toFixed(3);
+
+      chart.data.datasets[0].data = points;
+      chart.data.datasets[0].backgroundColor = points.map(point => colorFor(point.colorValue, colorKey));
+      chart.data.datasets[1].data = linePoints;
+      chart.options.scales.x.title.text = labelText(xDef.label);
+      chart.options.scales.y.title.text = labelText(yDef.label);
+      chart.options.scales.x.min = xDef.min;
+      chart.options.scales.x.max = xDef.max;
+      chart.options.scales.y.min = yDef.min;
+      chart.options.scales.y.max = yDef.max;
+      chart.options.scales.x.ticks.callback = value => xDef.format(Number(value));
+      chart.options.scales.y.ticks.callback = value => yDef.format(Number(value));
+      chart.update('none');
+      updateTable(points, xKey);
+      updateInsight(r, rho, points, xKey, yKey);
+      updateObservations(xKey);
+    }
+
+    function refreshSelectLabels() {
+      const selections = {
+        xSelect: document.getElementById('xSelect').value || 'people_of_color_pct'
+      };
+      const options = CORE_INDICATORS.map(key => [key, VARIABLES[key]])
+        .map(([key, def]) => `<option value="${key}">${labelText(def.label)}</option>`)
+        .join('');
+      document.getElementById('xSelect').innerHTML = options;
+      document.getElementById('xSelect').value = CORE_INDICATORS.includes(selections.xSelect)
+        ? selections.xSelect
+        : 'people_of_color_pct';
+    }
+
+    function populateControls() {
+      refreshSelectLabels();
+      const requestedIndicator = queryParams.get('indicator');
+      document.getElementById('xSelect').value = CORE_INDICATORS.includes(requestedIndicator)
+        ? requestedIndicator
+        : 'people_of_color_pct';
+      document.getElementById('xSelect').addEventListener('change', updateChart);
+    }
+
+    async function init() {
+      const response = await fetch(DATA_URL);
+      if (!response.ok) throw new Error(`Could not load ${DATA_URL}`);
+      const geojson = await response.json();
+      rows = geojson.features.map(feature => feature.properties);
+      populateControls();
+      const ctx = document.getElementById('correlationChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+          datasets: [
+            {
+              data: [],
+              pointRadius: 2.4,
+              pointHoverRadius: 6,
+              pointBorderWidth: 0,
+              backgroundColor: []
+            },
+            {
+              type: 'line',
+              data: [],
+              borderColor: '#171b1a',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              pointRadius: 0
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                title: items => items[0]?.raw?.name || '',
+                label: context => {
+                  if (context.datasetIndex === 1) return t('regressionLine');
+                  const point = context.raw;
+                  const xKey = document.getElementById('xSelect').value;
+                  const yKey = OUTCOME_KEY;
+                  return [
+                    `${labelText(VARIABLES[yKey].label)}: ${VARIABLES[yKey].format(point.y)}`,
+                    `${labelText(VARIABLES[xKey].label)}: ${VARIABLES[xKey].format(point.x)}`,
+                    `${t('equityRisk')}: ${VARIABLES.equity_risk.format(point.raw.equity_risk)}`
+                  ];
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: '', color: '#52605b', font: { size: 12, weight: 700 } },
+              grid: { color: '#e7ebe8' },
+              ticks: { color: '#66706b', maxTicksLimit: 8 }
+            },
+            y: {
+              title: { display: true, text: '', color: '#52605b', font: { size: 12, weight: 700 } },
+              grid: { color: '#e7ebe8' },
+              ticks: { color: '#66706b', maxTicksLimit: 8 }
+            }
+          }
+        }
+      });
+      updateChart();
+    }
+
+    document.getElementById('langToggle').addEventListener('click', () => {
+      setLanguage(currentLang === 'en' ? 'zh' : 'en');
+    });
+    applyLanguage();
+
+    init().catch(error => {
+      document.getElementById('insightText').textContent = error.message;
+    });
+  </script>
+</body>
+</html>
