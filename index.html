@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New York State — Allergen & Socioeconomic Map</title>
+  <title>New York State — Allergy Equity Map</title>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" />
   <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
@@ -70,6 +70,26 @@
       font-size: 10px; color: #bbb; margin-top: 10px; line-height: 1.5;
     }
     #controls .note a { color: #888; }
+    .control-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .control-header h3 { margin-bottom: 0; }
+    .lang-toggle {
+      min-height: 28px;
+      padding: 0 10px;
+      border: 1px solid #d8d8d8;
+      border-radius: 6px;
+      background: #fff;
+      color: #333;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .lang-toggle:hover { background: #f6f6f6; }
 
     /* ── legend ── */
     #legend {
@@ -121,82 +141,82 @@
       border-radius: 2px; flex-shrink: 0;
     }
 
-    /* ── key warning ── */
-    #key-warning {
-      position: absolute; bottom: 36px; left: 10px;
-      background: #fffbe6; border: 1px solid #ffe58f;
-      border-radius: 8px; padding: 10px 12px;
-      font-size: 11px; color: #7d5a00; max-width: 260px;
-      z-index: 1; display: none;
-    }
-    #key-warning a { color: #5a3d00; font-weight: 600; }
   </style>
 </head>
 <body>
 <div id="map"></div>
-<div id="loading"><div class="spinner"></div>Loading data…</div>
+<div id="loading"><div class="spinner"></div><span data-i18n="loading">Loading data...</span></div>
 
 <!-- Left: allergen readings + clicked tract info -->
 <div id="info-panel" class="panel">
-  <h2>Harrison, NY</h2>
+  <h2 data-i18n="mapTitle">NY Allergy Equity</h2>
   <div class="ts" id="ts"></div>
 
-  <div class="section">Air Quality (Open-Meteo / CAMS)</div>
+  <div class="section" data-i18n="downloadedExposureSample">Downloaded Exposure Sample</div>
   <div id="pollen-rows"></div>
 
-  <div class="section">Air Quality</div>
+  <div class="section" data-i18n="statewideResearchDataset">Statewide Research Dataset</div>
   <div id="aqi-rows"></div>
 
   <hr class="divider">
   <div id="tract-info" style="display:none">
-    <div class="section">Census Tract (ACS 2023)</div>
+    <div class="section" data-i18n="censusTract">Census Tract (ACS 2023)</div>
     <div class="tract-name" id="tract-name"></div>
     <div id="tract-rows"></div>
   </div>
-  <div id="tract-hint" style="font-size:11px;color:#bbb;">Click any tract to see socioeconomic data.</div>
+  <div id="tract-hint" style="font-size:11px;color:#bbb;" data-i18n="tractHint">Click any tract to see exposure, vulnerability, and equity-risk data.</div>
 </div>
 
 <!-- Right: layer controls -->
 <div id="controls" class="panel">
-  <h3>Layers</h3>
+  <div class="control-header">
+    <h3 data-i18n="layers">Layers</h3>
+    <button type="button" id="langToggle" class="lang-toggle">中文</button>
+  </div>
 
   <div class="ctrl-group">
-    <div class="ctrl-label">Pollen Layer (Google)</div>
+    <div class="ctrl-label" data-i18n="exposureOverlay">Exposure Overlay</div>
+    <label class="toggle-row">
+      <input type="checkbox" id="samplePointsToggle" checked> <span data-i18n="rawSamplePoints">Raw Sample Points</span>
+    </label>
     <label class="radio-row active">
-      <input type="radio" name="pollen" value="none" checked> None
+      <input type="radio" name="pollen" value="none" checked> <span data-i18n="none">None</span>
     </label>
     <label class="radio-row">
-      <input type="radio" name="pollen" value="TREE_UPI"> Tree Pollen
+      <input type="radio" name="pollen" value="exposure"> <span data-i18n="allergenExposure">Allergen Exposure</span>
     </label>
     <label class="radio-row">
-      <input type="radio" name="pollen" value="GRASS_UPI"> Grass Pollen
-    </label>
-    <label class="radio-row">
-      <input type="radio" name="pollen" value="WEED_UPI"> Weed Pollen
+      <input type="radio" name="pollen" value="equity_risk"> <span data-i18n="allergyEquityRisk">Allergy Equity Risk</span>
     </label>
   </div>
 
   <div class="ctrl-group">
-    <div class="ctrl-label">Socioeconomic Layer</div>
+    <div class="ctrl-label" data-i18n="equityContextLayer">Equity Context Layer</div>
     <label class="radio-row">
-      <input type="radio" name="ses" value="none"> None
+      <input type="radio" name="ses" value="none"> <span data-i18n="none">None</span>
     </label>
     <label class="radio-row active">
-      <input type="radio" name="ses" value="income" checked> Median Income
+      <input type="radio" name="ses" value="equity_risk" checked> <span data-i18n="equityRisk">Equity Risk</span>
     </label>
     <label class="radio-row">
-      <input type="radio" name="ses" value="poverty"> Poverty Rate
+      <input type="radio" name="ses" value="vulnerability"> <span data-i18n="socialVulnerability">Social Vulnerability</span>
     </label>
     <label class="radio-row">
-      <input type="radio" name="ses" value="year_built"> Housing Age
+      <input type="radio" name="ses" value="income"> <span data-i18n="medianIncome">Median Income</span>
+    </label>
+    <label class="radio-row">
+      <input type="radio" name="ses" value="poverty"> <span data-i18n="povertyRate">Poverty Rate</span>
+    </label>
+    <label class="radio-row">
+      <input type="radio" name="ses" value="people_of_color"> <span data-i18n="peopleOfColor">People of Color</span>
     </label>
   </div>
 
   <div class="note">
-    ~5,200 census tracts · ACS 5-year 2023.<br>
-    No key? Get one free at
-    <a href="https://api.census.gov/data/key_signup.html" target="_blank">api.census.gov</a>
-    — add it to <code>CENSUS_API_KEY</code> in the script.
+    <span data-i18n="controlsNote1">5,411 census tracts · ACS 5-year 2023 · Open-Meteo 7-day exposure samples.</span><br>
+    <span data-i18n="controlsNote2">Dataset is downloaded into</span> <code>data/</code> <span data-i18n="controlsNote3">for GitHub Pages.</span><br>
+    <a href="correlation.html" style="color:#666;text-decoration:underline;" data-i18n="openCorrelation">Open correlation analysis</a><br>
+    <a href="history.html" style="color:#666;text-decoration:underline;" data-i18n="openHistory">Open historical redlining analysis</a>
   </div>
 </div>
 
@@ -205,33 +225,186 @@
 
 <!-- Bottom-left: scatter plot -->
 <div id="scatter-panel" class="panel">
-  <h3>Allergen Intensity vs Socioeconomic Factors</h3>
+  <h3>Exposure vs Social Vulnerability</h3>
   <canvas id="scatter-chart" width="286" height="190"></canvas>
   <div id="scatter-income-legend">
-    <span>Income:</span>
+    <span data-i18n="incomeLegend">Income:</span>
     <span class="sil-swatch" style="background:#eff3ff;border:1px solid #ccc"></span>&lt;$30K
     <span class="sil-swatch" style="background:#bdd7e7"></span>$30–60K
     <span class="sil-swatch" style="background:#6baed6"></span>$60–90K
     <span class="sil-swatch" style="background:#2171b5"></span>$90–120K
     <span class="sil-swatch" style="background:#084594"></span>$120K+
-    <span class="sil-swatch" style="background:#ccc"></span>No data
+    <span class="sil-swatch" style="background:#ccc"></span><span data-i18n="noData">No data</span>
   </div>
-</div>
-
-<!-- Bottom-left: key warning -->
-<div id="key-warning">
-  ⚠ Census API key missing or invalid. Socioeconomic layer unavailable.<br>
-  Get a free key at <a href="https://api.census.gov/data/key_signup.html" target="_blank">api.census.gov</a>
-  and set <code>CENSUS_API_KEY</code> in the script.
 </div>
 
 <script>
 // ════════════════════════════════════════════════
-//  CONFIG — add your free Census API key here
-//  https://api.census.gov/data/key_signup.html
+//  STATIC DATA CONFIG — generated by npm run build:data
 // ════════════════════════════════════════════════
-const CENSUS_API_KEY   = 'd61d389d920acc81cf2b038c49e1b27f02b3014a';
-const GOOGLE_POLLEN_KEY = 'AIzaSyCKoSdYUayAG2oY6ebMOaKHQLJmajoYTr8';
+const LOCAL_GEOJSON_URL = 'data/ny-allergy-equity.geojson';
+const LOCAL_SUMMARY_URL = 'data/ny-allergy-equity-summary.json';
+const LOCAL_EXPOSURE_SAMPLES_URL = 'data/exposure-samples.geojson';
+
+const I18N = {
+  en: {
+    documentTitle: 'New York State - Allergy Equity Map',
+    loading: 'Loading data...',
+    loadingResearchData: 'Loading downloaded research data...',
+    mapTitle: 'NY Allergy Equity',
+    downloadedExposureSample: 'Downloaded Exposure Sample',
+    statewideResearchDataset: 'Statewide Research Dataset',
+    censusTract: 'Census Tract (ACS 2023)',
+    tractHint: 'Click any tract to see exposure, vulnerability, and equity-risk data.',
+    layers: 'Layers',
+    exposureOverlay: 'Exposure Overlay',
+    rawSamplePoints: 'Raw Sample Points',
+    none: 'None',
+    allergenExposure: 'Allergen Exposure',
+    allergyEquityRisk: 'Allergy Equity Risk',
+    equityContextLayer: 'Equity Context Layer',
+    equityRisk: 'Equity Risk',
+    socialVulnerability: 'Social Vulnerability',
+    medianIncome: 'Median Income',
+    povertyRate: 'Poverty Rate',
+    peopleOfColor: 'People of Color',
+    controlsNote1: '5,411 census tracts · ACS 5-year 2023 · Open-Meteo 7-day exposure samples.',
+    controlsNote2: 'Dataset is downloaded into',
+    controlsNote3: 'for GitHub Pages.',
+    openCorrelation: 'Open correlation analysis',
+    openHistory: 'Open historical redlining analysis',
+    incomeLegend: 'Income:',
+    noData: 'No data',
+    lower: 'Lower',
+    higher: 'Higher',
+    methodNote: 'Method Note',
+    methodNoteBody: 'Each tract receives an inverse-distance weighted average from nearby Open-Meteo sample points. Vulnerability uses ACS income, poverty, housing, renter, and age-sensitive population variables.',
+    downloaded: 'Downloaded',
+    apiSamplePoints: 'API sample points',
+    examplePoint: 'Example point',
+    pollenPeak: 'Pollen peak',
+    pm25Avg: 'PM2.5 avg',
+    tracts: 'Tracts',
+    avgExposure: 'Avg exposure',
+    avgVulnerability: 'Avg vulnerability',
+    avgEquityRisk: 'Avg equity risk',
+    exposureProxy: 'Exposure Proxy',
+    exposureMethod: 'Exposure Method',
+    pollenPeakEst: 'Pollen Peak Est.',
+    pollenAvgEst: 'Pollen Avg Est.',
+    pm25AvgEst: 'PM2.5 Avg Est.',
+    aqiAvgEst: 'AQI Avg Est.',
+    ozoneAvgEst: 'Ozone Avg Est.',
+    renters: 'Renters',
+    ageSensitivePop: 'Age-Sensitive Pop.',
+    medianYearBuilt: 'Median Year Built',
+    lowRisk: 'Low',
+    elevatedRisk: 'Elevated',
+    highRisk: 'High',
+    allergyEquityRiskLower: 'allergy equity risk',
+    pointIdw: 'point IDW',
+    exposureRaw: 'Exposure raw',
+    aqiAvg: 'AQI avg',
+    ozoneAvg: 'Ozone avg',
+    harrisonPopup: 'Allergen monitoring center',
+    tractPrefix: 'Tract'
+  },
+  zh: {
+    documentTitle: '纽约州 - 过敏公平地图',
+    loading: '正在加载数据...',
+    loadingResearchData: '正在加载已下载的研究数据...',
+    mapTitle: '纽约过敏公平地图',
+    downloadedExposureSample: '已下载的暴露采样',
+    statewideResearchDataset: '全州研究数据集',
+    censusTract: '人口普查区块组 (ACS 2023)',
+    tractHint: '点击任意 census tract，查看暴露、脆弱性和公平风险数据。',
+    layers: '图层',
+    exposureOverlay: '暴露图层',
+    rawSamplePoints: '原始采样点',
+    none: '无',
+    allergenExposure: '过敏原暴露',
+    allergyEquityRisk: '过敏公平风险',
+    equityContextLayer: '社会公平背景图层',
+    equityRisk: '公平风险',
+    socialVulnerability: '社会脆弱性',
+    medianIncome: '收入中位数',
+    povertyRate: '贫困率',
+    peopleOfColor: '有色人种比例',
+    controlsNote1: '5,411 个 census tracts · ACS 2023 五年数据 · Open-Meteo 7 天暴露采样。',
+    controlsNote2: '数据已下载到',
+    controlsNote3: '可用于 GitHub Pages。',
+    openCorrelation: '打开相关性分析',
+    openHistory: '打开历史 redlining 分析',
+    incomeLegend: '收入:',
+    noData: '无数据',
+    lower: '较低',
+    higher: '较高',
+    methodNote: '方法说明',
+    methodNoteBody: '每个 census tract 的值来自附近 Open-Meteo 采样点的反距离加权平均。脆弱性使用 ACS 收入、贫困、住房年代、租户比例和年龄敏感人口变量。',
+    downloaded: '下载时间',
+    apiSamplePoints: 'API 采样点',
+    examplePoint: '示例点',
+    pollenPeak: '花粉峰值',
+    pm25Avg: 'PM2.5 平均',
+    tracts: 'Census tracts',
+    avgExposure: '平均暴露',
+    avgVulnerability: '平均脆弱性',
+    avgEquityRisk: '平均公平风险',
+    exposureProxy: '暴露估计',
+    exposureMethod: '暴露估算方法',
+    pollenPeakEst: '花粉峰值估计',
+    pollenAvgEst: '花粉平均估计',
+    pm25AvgEst: 'PM2.5 平均估计',
+    aqiAvgEst: 'AQI 平均估计',
+    ozoneAvgEst: '臭氧平均估计',
+    renters: '租户比例',
+    ageSensitivePop: '年龄敏感人口',
+    medianYearBuilt: '住房建造年份中位数',
+    lowRisk: '低',
+    elevatedRisk: '升高',
+    highRisk: '高',
+    allergyEquityRiskLower: '过敏公平风险',
+    pointIdw: '点 IDW',
+    exposureRaw: '原始暴露值',
+    aqiAvg: 'AQI 平均',
+    ozoneAvg: '臭氧平均',
+    harrisonPopup: '过敏原监测中心',
+    tractPrefix: 'Tract'
+  }
+};
+
+let currentLang = localStorage.getItem('allergyEquityLang') || 'en';
+if (!I18N[currentLang]) currentLang = 'en';
+let latestSummary = null;
+let latestTractProps = null;
+
+function t(key) {
+  return I18N[currentLang][key] || I18N.en[key] || key;
+}
+
+function labelText(value) {
+  return typeof value === 'object' ? (value[currentLang] || value.en) : value;
+}
+
+function applyLanguage() {
+  document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+  document.title = t('documentTitle');
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  const langToggle = document.getElementById('langToggle');
+  if (langToggle) langToggle.textContent = currentLang === 'en' ? '中文' : 'English';
+  if (latestSummary) renderInfoPanel(latestSummary);
+  if (latestTractProps) renderTractInfo(latestTractProps);
+  if (scatterChart) updateScatterChart(activeSES);
+  if (document.getElementById('legend').style.display === 'block') renderLegend(activeSES);
+}
+
+function setLanguage(lang) {
+  currentLang = lang;
+  localStorage.setItem('allergyEquityLang', lang);
+  applyLanguage();
+}
 
 // ── constants ──────────────────────────────────
 const HARRISON   = { lat: 40.9676, lng: -73.7124 };
@@ -266,11 +439,56 @@ const NY_CITIES = [
 
 // ── SES layer definitions ──────────────────────
 const SES = {
+  equity_risk: {
+    label:    { en: 'Allergy Equity Risk', zh: '过敏公平风险' },
+    field:    'equity_risk',
+    format:   v => (v * 100).toFixed(0) + '%',
+    lowLabel: { en: 'Lower', zh: '较低' }, highLabel: { en: 'Higher', zh: '较高' },
+    gradient: 'linear-gradient(to right,#f7fcf5,#c7e9c0,#74c476,#fd8d3c,#de2d26)',
+    paint: ['interpolate', ['linear'], ['coalesce', ['get', 'equity_risk'], -1],
+      -1,   '#cccccc',
+      0.15, '#f7fcf5',
+      0.30, '#c7e9c0',
+      0.45, '#74c476',
+      0.60, '#fd8d3c',
+      0.75, '#de2d26'],
+    note: { en: 'Exposure combined with social vulnerability', zh: '过敏暴露与社会脆弱性的组合指标' }
+  },
+  vulnerability: {
+    label:    { en: 'Social Vulnerability', zh: '社会脆弱性' },
+    field:    'vulnerability',
+    format:   v => (v * 100).toFixed(0) + '%',
+    lowLabel: { en: 'Lower', zh: '较低' }, highLabel: { en: 'Higher', zh: '较高' },
+    gradient: 'linear-gradient(to right,#f7fbff,#c6dbef,#6baed6,#2171b5,#08306b)',
+    paint: ['interpolate', ['linear'], ['coalesce', ['get', 'vulnerability'], -1],
+      -1,   '#cccccc',
+      0.15, '#f7fbff',
+      0.35, '#c6dbef',
+      0.55, '#6baed6',
+      0.75, '#2171b5',
+      1.00, '#08306b'],
+    note: { en: 'Income, poverty, housing age, renters, and age-sensitive population', zh: '收入、贫困、住房年代、租户比例和年龄敏感人口' }
+  },
+  exposure: {
+    label:    { en: 'Allergen Exposure Proxy', zh: '过敏原暴露估计' },
+    field:    'exposure',
+    format:   v => (v * 100).toFixed(0) + '%',
+    lowLabel: { en: 'Lower', zh: '较低' }, highLabel: { en: 'Higher', zh: '较高' },
+    gradient: 'linear-gradient(to right,#edf8fb,#b2e2e2,#66c2a4,#2ca25f,#006d2c)',
+    paint: ['interpolate', ['linear'], ['coalesce', ['get', 'exposure'], -1],
+      -1,   '#cccccc',
+      0.10, '#edf8fb',
+      0.25, '#b2e2e2',
+      0.40, '#66c2a4',
+      0.55, '#2ca25f',
+      0.70, '#006d2c'],
+    note: { en: 'IDW average from nearby Open-Meteo pollen, PM2.5, AQI, and ozone samples', zh: '附近 Open-Meteo 花粉、PM2.5、AQI 和臭氧采样点的 IDW 加权平均' }
+  },
   income: {
-    label:    'Median Household Income',
+    label:    { en: 'Median Household Income', zh: '家庭收入中位数' },
     field:    'income',
     format:   v => '$' + Math.round(v).toLocaleString(),
-    lowLabel: '$30K', highLabel: '$150K+',
+    lowLabel: { en: '$30K', zh: '$30K' }, highLabel: { en: '$150K+', zh: '$150K+' },
     gradient: 'linear-gradient(to right,#eff3ff,#bdd7e7,#6baed6,#2171b5,#084594)',
     // coalesce maps null → -1, which hits the #cccccc stop (no-data grey)
     paint: ['interpolate', ['linear'], ['coalesce', ['get', 'income'], -1],
@@ -280,13 +498,13 @@ const SES = {
       90000,  '#6baed6',
       120000, '#2171b5',
       150000, '#084594'],
-    note: 'Lower income → less access to allergy care'
+    note: { en: 'Lower income may reduce access to allergy care', zh: '较低收入可能意味着过敏护理可及性更低' }
   },
   poverty: {
-    label:    'Poverty Rate',
+    label:    { en: 'Poverty Rate', zh: '贫困率' },
     field:    'poverty_rate',
     format:   v => (v * 100).toFixed(1) + '%',
-    lowLabel: '0%', highLabel: '30%+',
+    lowLabel: { en: '0%', zh: '0%' }, highLabel: { en: '30%+', zh: '30%+' },
     gradient: 'linear-gradient(to right,#fee5d9,#fcae91,#fb6a4a,#de2d26,#a50f15)',
     paint: ['interpolate', ['linear'], ['coalesce', ['get', 'poverty_rate'], -1],
       -1,   '#cccccc',
@@ -295,13 +513,13 @@ const SES = {
       0.12, '#fb6a4a',
       0.20, '#de2d26',
       0.30, '#a50f15'],
-    note: 'Higher poverty → less allergen management capacity'
+    note: { en: 'Higher poverty may reduce allergen management capacity', zh: '较高贫困率可能降低过敏原管理能力' }
   },
   year_built: {
-    label:    'Median Year Built',
+    label:    { en: 'Median Year Built', zh: '住房建造年份中位数' },
     field:    'year_built',
     format:   v => Math.round(v).toString(),
-    lowLabel: '≤1940', highLabel: '2010+',
+    lowLabel: { en: '<=1940', zh: '<=1940' }, highLabel: { en: '2010+', zh: '2010+' },
     gradient: 'linear-gradient(to right,#a63603,#e6550d,#fd8d3c,#fdbe85,#feedde)',
     paint: ['interpolate', ['linear'], ['coalesce', ['get', 'year_built'], -1],
       -1,   '#cccccc',
@@ -310,14 +528,98 @@ const SES = {
       1980, '#fd8d3c',
       2000, '#fdbe85',
       2010, '#feedde'],
-    note: 'Older housing → higher mold & pest allergen risk'
+    note: { en: 'Older housing may increase mold and pest allergen risk', zh: '老旧住房可能增加霉菌和害虫相关过敏风险' }
+  },
+  people_of_color: {
+    label:    { en: 'People of Color Share', zh: '有色人种比例' },
+    field:    'people_of_color_pct',
+    format:   v => (v * 100).toFixed(1) + '%',
+    lowLabel: { en: '0%', zh: '0%' }, highLabel: { en: '100%', zh: '100%' },
+    gradient: 'linear-gradient(to right,#ffffe5,#fff7bc,#fec44f,#d95f0e,#7f2704)',
+    paint: ['interpolate', ['linear'], ['coalesce', ['get', 'people_of_color_pct'], -1],
+      -1,   '#cccccc',
+      0,    '#ffffe5',
+      0.25, '#fff7bc',
+      0.50, '#fec44f',
+      0.75, '#d95f0e',
+      1.00, '#7f2704'],
+    note: { en: 'Demographic equity context, not part of vulnerability score', zh: '人口结构公平背景，不计入脆弱性分数' }
   }
 };
 
-let activeSES    = 'income';
+let activeSES    = 'equity_risk';
 let tractGeoJSON = null;
 let scatterChart = null;
 let geoidToChartIdx = null;
+let scatterPoints = [];
+
+const SCATTER_FIELDS = {
+  exposure: {
+    label: { en: 'Allergen Exposure', zh: '过敏原暴露' },
+    field: 'exposure',
+    axis: { en: 'Allergen Exposure Proxy', zh: '过敏原暴露估计' },
+    format: v => `${(v * 100).toFixed(0)}%`,
+    min: 0,
+    max: 0.35
+  },
+  equity_risk: {
+    label: { en: 'Equity Risk', zh: '公平风险' },
+    field: 'equityRisk',
+    axis: { en: 'Allergy Equity Risk', zh: '过敏公平风险' },
+    format: v => `${(v * 100).toFixed(0)}%`,
+    min: 0,
+    max: 0.8
+  },
+  vulnerability: {
+    label: { en: 'Social Vulnerability', zh: '社会脆弱性' },
+    field: 'vulnerability',
+    axis: { en: 'Social Vulnerability', zh: '社会脆弱性' },
+    format: v => `${(v * 100).toFixed(0)}%`,
+    min: 0,
+    max: 1
+  },
+  poverty: {
+    label: { en: 'Poverty Rate', zh: '贫困率' },
+    field: 'poverty',
+    axis: { en: 'Poverty Rate', zh: '贫困率' },
+    format: v => `${(v * 100).toFixed(1)}%`,
+    min: 0,
+    max: 0.6
+  },
+  income: {
+    label: { en: 'Median Income', zh: '收入中位数' },
+    field: 'income',
+    axis: { en: 'Median Household Income', zh: '家庭收入中位数' },
+    format: v => `$${Math.round(v).toLocaleString()}`,
+    min: 0,
+    max: 250000
+  },
+  people_of_color: {
+    label: { en: 'People of Color', zh: '有色人种比例' },
+    field: 'peopleOfColor',
+    axis: { en: 'People of Color Share', zh: '有色人种比例' },
+    format: v => `${(v * 100).toFixed(1)}%`,
+    min: 0,
+    max: 1
+  },
+  year_built: {
+    label: { en: 'Housing Age', zh: '住房年代' },
+    field: 'yearBuilt',
+    axis: { en: 'Median Year Built', zh: '住房建造年份中位数' },
+    format: v => `${Math.round(v)}`,
+    min: 1900,
+    max: 2025
+  }
+};
+
+function scatterAxesForLayer(layerKey) {
+  if (layerKey === 'exposure') return ['vulnerability', 'exposure'];
+  if (layerKey === 'equity_risk') return ['vulnerability', 'equity_risk'];
+  if (['poverty', 'income', 'people_of_color', 'year_built', 'vulnerability'].includes(layerKey)) {
+    return [layerKey, 'exposure'];
+  }
+  return ['vulnerability', 'exposure'];
+}
 
 // ══════════════════════════════════════════════
 //  MAP
@@ -329,165 +631,6 @@ const map = new maplibregl.Map({
   zoom: 7
 });
 map.addControl(new maplibregl.NavigationControl(), 'top-right');
-
-// ══════════════════════════════════════════════
-//  DATA FETCHING
-// ══════════════════════════════════════════════
-function currentHourIdx(times) {
-  const prefix = new Date().toISOString().slice(0, 13);
-  const idx = times.findIndex(t => t.startsWith(prefix));
-  return idx >= 0 ? idx : 0;
-}
-
-async function fetchOpenMeteo(lat, lng) {
-  const url = `https://air-quality-api.open-meteo.com/v1/air-quality`
-    + `?latitude=${lat.toFixed(4)}&longitude=${lng.toFixed(4)}`
-    + `&hourly=pm2_5,us_aqi,grass_pollen,birch_pollen,alder_pollen,ragweed_pollen`
-    + `&forecast_days=1&timezone=America%2FNew_York`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`Open-Meteo ${r.status}`);
-  return r.json();
-}
-
-async function fetchGooglePollen(lat, lng) {
-  const url = `https://pollen.googleapis.com/v1/forecast:lookup`
-    + `?location.latitude=${lat.toFixed(4)}&location.longitude=${lng.toFixed(4)}`
-    + `&days=1&plantsDescription=false&key=${GOOGLE_POLLEN_KEY}`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`Google Pollen ${r.status}`);
-  const data = await r.json();
-  if (data.error) throw new Error(`Google Pollen: ${data.error.message}`);
-  const day = data.dailyInfo?.[0];
-  if (!day) return { lat, lng, tree: 0, grass: 0, weed: 0, composite: 0 };
-  const get = code => day.pollenTypeInfo?.find(p => p.code === code)?.indexInfo?.value ?? 0;
-  const tree = get('TREE'), grass = get('GRASS'), weed = get('WEED');
-  return { lat, lng, tree, grass, weed, composite: (tree + grass + weed) / 3 };
-}
-
-async function fetchAllCitiesGooglePollen() {
-  const results = await Promise.allSettled(
-    NY_CITIES.map(city => fetchGooglePollen(city.lat, city.lng).then(p => ({ ...city, ...p })))
-  );
-  const fulfilled = results.filter(r => r.status === 'fulfilled').map(r => r.value);
-  if (!fulfilled.length) throw new Error('Google Pollen returned no data for any city');
-  return fulfilled;
-}
-
-async function fetchTractBoundaries() {
-  // STATE field in TIGERweb is a string type — must quote it: STATE='36'
-  const where = `STATE%3D%27${STATE}%27`;
-  const base = `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/0/query`
-    + `?where=${where}`
-    + `&outFields=TRACT,GEOID,NAME`
-    + `&outSR=4326&f=geojson&returnGeometry=true&resultRecordCount=2000`;
-
-  const countRes = await fetch(
-    `https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/Tracts_Blocks/MapServer/0/query`
-    + `?where=${where}&returnCountOnly=true&f=json`
-  );
-  if (!countRes.ok) throw new Error(`TIGERweb count ${countRes.status}`);
-  const countJson = await countRes.json();
-  // ArcGIS returns HTTP 200 with {error:{...}} on query failures
-  if (countJson.error) throw new Error(`TIGERweb: ${countJson.error.message}`);
-  const count = countJson.count;
-  if (!count) throw new Error('TIGERweb returned 0 tracts — check STATE filter');
-
-  const pages = Math.ceil(count / 2000);
-  const batches = await Promise.all(
-    Array.from({ length: pages }, (_, i) =>
-      fetch(`${base}&resultOffset=${i * 2000}`)
-        .then(r => { if (!r.ok) throw new Error(`TIGERweb page ${i} ${r.status}`); return r.json(); })
-        .then(d => {
-          if (d.error) throw new Error(`TIGERweb page ${i}: ${d.error.message}`);
-          return d.features || [];
-        })
-    )
-  );
-
-  return { type: 'FeatureCollection', features: batches.flat() };
-}
-
-async function fetchACSData() {
-  const key   = CENSUS_API_KEY ? `&key=${CENSUS_API_KEY}` : '';
-  const vars  = 'B19013_001E,B17001_002E,B17001_001E,B25035_001E';
-  const url   = `https://api.census.gov/data/2023/acs/acs5`
-    + `?get=NAME,${vars}&for=tract:*&in=state:${STATE}${key}`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`Census API ${r.status}`);
-  const rows    = await r.json();
-  const headers = rows[0];
-  const map     = {};
-  rows.slice(1).forEach(row => {
-    const obj    = {};
-    headers.forEach((h, i) => obj[h] = row[i]);
-    // Tract GEOID = state (2) + county (3) + tract (6) = 11 chars
-    const geoid  = String(obj.state).padStart(2,'0')
-                 + String(obj.county).padStart(3,'0')
-                 + String(obj.tract).padStart(6,'0');
-    const income = parseFloat(obj.B19013_001E);
-    const povN   = parseFloat(obj.B17001_002E);
-    const povD   = parseFloat(obj.B17001_001E);
-    const yrBlt  = parseFloat(obj.B25035_001E);
-    map[geoid] = {
-      income:       income > 0 ? income        : -1,
-      poverty_rate: povD   > 0 ? povN / povD   : -1,
-      year_built:   yrBlt  > 0 ? yrBlt         : -1,
-      name:         obj.NAME
-    };
-  });
-  return map;
-}
-
-function joinACS(geo, acsMap) {
-  geo.features.forEach(f => {
-    const geoid = String(f.properties.GEOID).padStart(11,'0');
-    const acs   = acsMap[geoid];
-    if (acs) Object.assign(f.properties, acs);
-    else     Object.assign(f.properties, { income: -1, poverty_rate: -1, year_built: -1 });
-  });
-  return geo;
-}
-
-// ══════════════════════════════════════════════
-//  ALLERGEN IDW PER TRACT
-// ══════════════════════════════════════════════
-function tractCentroid(feature) {
-  const geom = feature.geometry;
-  const ring = geom.type === 'Polygon'
-    ? geom.coordinates[0]
-    : geom.coordinates[0][0]; // first ring of first polygon in MultiPolygon
-  let lngSum = 0, latSum = 0;
-  for (const [x, y] of ring) { lngSum += x; latSum += y; }
-  return [lngSum / ring.length, latSum / ring.length];
-}
-
-function attachAllergenToTracts(tractGeo, cityPollenData) {
-  if (!cityPollenData.length) {
-    tractGeo.features.forEach(f => { f.properties.allergen = 0; });
-    return;
-  }
-
-  // Nearest-neighbor: each tract gets the composite score of the closest sampled city
-  tractGeo.features.forEach(f => {
-    if (!f.geometry) { f.properties.allergen = 0; return; }
-    const [lng, lat] = tractCentroid(f);
-    let minD2 = Infinity, nearest = 0;
-    for (const c of cityPollenData) {
-      const dx = lng - c.lng, dy = lat - c.lat;
-      const d2 = dx * dx + dy * dy;
-      if (d2 < minD2) { minD2 = d2; nearest = c.composite; }
-    }
-    f.properties.allergen = nearest;
-  });
-
-  // Min-max normalize: 0% = least allergenic tract, 100% = most allergenic tract
-  const scores = tractGeo.features.map(f => f.properties.allergen);
-  const minS = Math.min(...scores), maxS = Math.max(...scores);
-  const range = maxS - minS || 1;
-  tractGeo.features.forEach(f => {
-    f.properties.allergen = (f.properties.allergen - minS) / range;
-  });
-}
 
 // ══════════════════════════════════════════════
 //  SCATTER CHART
@@ -503,34 +646,37 @@ function incomeColor(income, alpha) {
 }
 
 function buildScatterChart(tractGeo) {
-  const pts = [];
+  scatterPoints = [];
   tractGeo.features.forEach(f => {
     const p = f.properties;
-    if (p.poverty_rate < 0 || p.allergen == null) return;
-    pts.push({
-      x: p.poverty_rate,
-      y: p.allergen,
+    if (p.vulnerability < 0 || p.exposure == null) return;
+    scatterPoints.push({
       geoid: String(p.GEOID),
       name:  p.name || `Tract ${p.TRACT}`,
       income:     p.income,
-      year_built: p.year_built,
+      equityRisk: p.equity_risk,
+      exposure: p.exposure,
+      vulnerability: p.vulnerability,
+      poverty: p.poverty_rate,
+      peopleOfColor: p.people_of_color_pct,
+      yearBuilt: p.year_built,
     });
   });
 
-  geoidToChartIdx = new Map(pts.map((p, i) => [p.geoid, i]));
+  geoidToChartIdx = new Map(scatterPoints.map((p, i) => [p.geoid, i]));
 
   const ctx = document.getElementById('scatter-chart').getContext('2d');
   scatterChart = new Chart(ctx, {
     type: 'scatter',
     data: {
       datasets: [{
-        data: pts,
+        data: [],
         pointRadius: 2,
         pointHoverRadius: 5,
         pointHoverBorderWidth: 1.5,
         pointHoverBorderColor: '#222',
-        backgroundColor:      pts.map(p => incomeColor(p.income, 0.55)),
-        hoverBackgroundColor: pts.map(p => incomeColor(p.income, 1.0)),
+        backgroundColor:      [],
+        hoverBackgroundColor: [],
         borderColor: 'transparent',
       }]
     },
@@ -543,12 +689,16 @@ function buildScatterChart(tractGeo) {
           callbacks: {
             title: ([item]) => item?.raw?.name || '',
             label: ({ raw: d }) => {
+              const [xKey, yKey] = scatterAxesForLayer(activeSES);
+              const xDef = SCATTER_FIELDS[xKey];
+              const yDef = SCATTER_FIELDS[yKey];
               const lines = [
-                `Allergen: ${(d.y * 100).toFixed(0)}%`,
-                `Poverty:  ${(d.x * 100).toFixed(1)}%`,
+                `${labelText(yDef.label)}: ${yDef.format(d[yDef.field])}`,
+                `${labelText(xDef.label)}: ${xDef.format(d[xDef.field])}`,
+                `${t('equityRisk')}: ${(d.equityRisk * 100).toFixed(0)}%`,
               ];
-              if (d.income >= 0)     lines.push(`Income: $${Math.round(d.income).toLocaleString()}`);
-              if (d.year_built >= 0) lines.push(`Built: ${Math.round(d.year_built)}`);
+              if (d.income >= 0) lines.push(`${t('medianIncome')}: $${Math.round(d.income).toLocaleString()}`);
+              if (d.poverty >= 0) lines.push(`${t('povertyRate')}: ${(d.poverty * 100).toFixed(1)}%`);
               return lines;
             }
           }
@@ -556,13 +706,13 @@ function buildScatterChart(tractGeo) {
       },
       scales: {
         x: {
-          title: { display: true, text: 'Poverty Rate', font: { size: 9 }, color: '#888' },
+          title: { display: true, text: 'Social Vulnerability', font: { size: 9 }, color: '#888' },
           ticks: { callback: v => (v * 100).toFixed(0) + '%', font: { size: 8 }, color: '#888', maxTicksLimit: 6 },
-          min: 0, max: 0.4,
+          min: 0, max: 1,
           grid: { color: '#f0f0f0' }
         },
         y: {
-          title: { display: true, text: 'Pollen Score (Google)', font: { size: 9 }, color: '#888' },
+          title: { display: true, text: 'Allergen Exposure Proxy', font: { size: 9 }, color: '#888' },
           ticks: { callback: v => (v * 100).toFixed(0) + '%', font: { size: 8 }, color: '#888', maxTicksLimit: 5 },
           min: 0, max: 1,
           grid: { color: '#f0f0f0' }
@@ -570,7 +720,7 @@ function buildScatterChart(tractGeo) {
       },
       onHover: (_, elements) => {
         if (elements.length) {
-          const geoid = pts[elements[0].index].geoid;
+          const geoid = scatterChart.data.datasets[0].data[elements[0].index].geoid;
           map.setFilter('tracts-hover', ['==', ['get', 'GEOID'], geoid]);
         } else {
           map.setFilter('tracts-hover', ['==', ['get', 'GEOID'], '']);
@@ -579,29 +729,38 @@ function buildScatterChart(tractGeo) {
     }
   });
 
+  updateScatterChart(activeSES);
   document.getElementById('scatter-panel').style.display = 'block';
+}
+
+function updateScatterChart(layerKey) {
+  if (!scatterChart || !scatterPoints.length) return;
+  const [xKey, yKey] = scatterAxesForLayer(layerKey);
+  const xDef = SCATTER_FIELDS[xKey];
+  const yDef = SCATTER_FIELDS[yKey];
+  const data = scatterPoints
+    .filter(p => p[xDef.field] != null && p[yDef.field] != null && p[xDef.field] >= 0 && p[yDef.field] >= 0)
+    .map(p => ({ ...p, x: p[xDef.field], y: p[yDef.field] }));
+
+  geoidToChartIdx = new Map(data.map((p, i) => [p.geoid, i]));
+  scatterChart.data.datasets[0].data = data;
+  scatterChart.data.datasets[0].backgroundColor = data.map(p => incomeColor(p.income, 0.55));
+  scatterChart.data.datasets[0].hoverBackgroundColor = data.map(p => incomeColor(p.income, 1.0));
+  scatterChart.options.scales.x.title.text = labelText(xDef.axis);
+  scatterChart.options.scales.y.title.text = labelText(yDef.axis);
+  scatterChart.options.scales.x.min = xDef.min;
+  scatterChart.options.scales.x.max = xDef.max;
+  scatterChart.options.scales.y.min = yDef.min;
+  scatterChart.options.scales.y.max = yDef.max;
+  scatterChart.options.scales.x.ticks.callback = v => xDef.format(Number(v));
+  scatterChart.options.scales.y.ticks.callback = v => yDef.format(Number(v));
+  document.querySelector('#scatter-panel h3').textContent = `${labelText(yDef.label)} vs ${labelText(xDef.label)}`;
+  scatterChart.update('none');
 }
 
 // ══════════════════════════════════════════════
 //  MAP LAYERS
 // ══════════════════════════════════════════════
-function addGooglePollenLayers() {
-  ['TREE_UPI', 'GRASS_UPI', 'WEED_UPI'].forEach(type => {
-    map.addSource(`pollen-${type}`, {
-      type: 'raster',
-      tiles: [`https://pollen.googleapis.com/v1/mapTypes/${type}/heatmapTiles/{z}/{x}/{y}?key=${GOOGLE_POLLEN_KEY}`],
-      tileSize: 256,
-      attribution: '© Google Pollen API'
-    });
-    map.addLayer({
-      id: `pollen-${type}`, type: 'raster',
-      source: `pollen-${type}`,
-      layout: { visibility: 'none' },
-      paint: { 'raster-opacity': 0.8 }
-    });
-  });
-}
-
 function addTractLayers(geo) {
   map.addSource('tracts', { type: 'geojson', data: geo });
 
@@ -625,6 +784,73 @@ function addTractLayers(geo) {
   });
 }
 
+function addExposureSampleLayers(sampleGeo) {
+  map.addSource('exposure-samples', { type: 'geojson', data: sampleGeo });
+
+  map.addLayer({
+    id: 'exposure-sample-halo',
+    type: 'circle',
+    source: 'exposure-samples',
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['get', 'exposure_raw'],
+        0.14, 8,
+        0.20, 16,
+        0.24, 22],
+      'circle-color': '#111827',
+      'circle-opacity': 0.18,
+      'circle-stroke-width': 0
+    }
+  });
+
+  map.addLayer({
+    id: 'exposure-sample-points',
+    type: 'circle',
+    source: 'exposure-samples',
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['get', 'exposure_raw'],
+        0.14, 4,
+        0.20, 7,
+        0.24, 9],
+      'circle-color': ['interpolate', ['linear'], ['get', 'exposure_raw'],
+        0.14, '#2ca25f',
+        0.16, '#fee08b',
+        0.20, '#f46d43',
+        0.24, '#b2182b'],
+      'circle-opacity': 0.95,
+      'circle-stroke-color': '#ffffff',
+      'circle-stroke-width': 1.6
+    }
+  });
+
+  map.on('mouseenter', 'exposure-sample-points', () => {
+    map.getCanvas().style.cursor = 'pointer';
+  });
+  map.on('mouseleave', 'exposure-sample-points', () => {
+    map.getCanvas().style.cursor = '';
+  });
+  map.on('click', 'exposure-sample-points', e => {
+    const p = e.features?.[0]?.properties;
+    if (!p) return;
+    new maplibregl.Popup({ offset: 14, maxWidth: '260px' })
+      .setLngLat(e.lngLat)
+      .setHTML(`
+        <strong>${p.name}</strong><br>
+        ${t('exposureRaw')}: ${(Number(p.exposure_raw) * 100).toFixed(0)}%<br>
+        ${t('pollenPeak')}: ${p.pollen_peak}<br>
+        ${t('pm25Avg')}: ${p.pm25_average} μg/m³<br>
+        ${t('aqiAvg')}: ${p.aqi_average}<br>
+        ${t('ozoneAvg')}: ${p.ozone_average}
+      `)
+      .addTo(map);
+  });
+}
+
+function setSamplePointsVisible(visible) {
+  ['exposure-sample-halo', 'exposure-sample-points'].forEach(id => {
+    if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', visible ? 'visible' : 'none');
+  });
+}
+
 function updateSESLayer(key) {
   map.setPaintProperty('tracts-fill', 'fill-color',
     key === 'none' ? 'rgba(0,0,0,0)' : SES[key].paint
@@ -641,25 +867,20 @@ function renderLegend(sesKey) {
   if (sesKey !== 'none') {
     const def = SES[sesKey];
     html += `
-      <div class="leg-title">${def.label}</div>
+      <div class="leg-title">${labelText(def.label)}</div>
       <div class="grad-bar" style="background:${def.gradient}"></div>
-      <div class="grad-labels"><span>${def.lowLabel}</span><span>${def.highLabel}</span></div>
-      <div style="font-size:10px;color:#aaa;margin-top:4px;">${def.note}</div>
+      <div class="grad-labels"><span>${labelText(def.lowLabel)}</span><span>${labelText(def.highLabel)}</span></div>
+      <div style="font-size:10px;color:#aaa;margin-top:4px;">${labelText(def.note)}</div>
       <div class="leg-sep"></div>
-      <div class="leg-item"><div class="leg-dot" style="background:#ddd"></div> No data</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#ddd"></div> ${t('noData')}</div>
       <hr class="leg-sep">`;
   }
 
   html += `
-    <div class="leg-title">Allergen Intensity</div>
-    <div class="grad-bar" style="background:linear-gradient(to right,#00e400,#ffff00,#ff7e00,#ff0000,#8f3f97)"></div>
-    <div class="grad-labels"><span>Low</span><span>High</span></div>
-    <div class="leg-sep"></div>
-    <div class="leg-item"><div class="leg-dot" style="background:#00e400"></div>Good</div>
-    <div class="leg-item"><div class="leg-dot" style="background:#ffff00;border:1px solid #ddd"></div>Moderate</div>
-    <div class="leg-item"><div class="leg-dot" style="background:#ff7e00"></div>Unhealthy (sensitive)</div>
-    <div class="leg-item"><div class="leg-dot" style="background:#ff0000"></div>Unhealthy</div>
-    <div class="leg-item"><div class="leg-dot" style="background:#8f3f97"></div>Very Unhealthy</div>`;
+    <div class="leg-title">${t('methodNote')}</div>
+    <div style="font-size:10px;color:#888;line-height:1.45;">
+      ${t('methodNoteBody')}
+    </div>`;
 
   leg.innerHTML = html;
   leg.style.display = 'block';
@@ -668,49 +889,64 @@ function renderLegend(sesKey) {
 // ══════════════════════════════════════════════
 //  UI: left panel
 // ══════════════════════════════════════════════
-function renderInfoPanel(data, idx) {
-  const h  = data.hourly;
-  const ts = new Date(h.time[idx]);
+function renderInfoPanel(summary) {
+  latestSummary = summary;
+  const generated = new Date(summary.generated_at);
+  const exampleSample = summary.sample_locations[0];
   document.getElementById('ts').textContent =
-    ts.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    `${t('downloaded')} ${generated.toLocaleString(currentLang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
 
   document.getElementById('pollen-rows').innerHTML = [
-    ['Grass',   h.grass_pollen?.[idx]],
-    ['Birch',   h.birch_pollen?.[idx]],
-    ['Ragweed', h.ragweed_pollen?.[idx]],
-    ['Alder',   h.alder_pollen?.[idx]],
-  ].map(([l, v]) => `<div class="row"><span>${l}</span><b>${v != null ? v.toFixed(1) : '—'} μg/m³</b></div>`).join('');
+    [t('apiSamplePoints'), summary.sample_grid?.point_count?.toLocaleString() || summary.sample_locations.length.toLocaleString(), ''],
+    [t('examplePoint'), exampleSample.name, ''],
+    [t('pollenPeak'), exampleSample.pollen_peak, ''],
+    [t('pm25Avg'), exampleSample.pm25_average, ' μg/m³'],
+  ].map(([l, v, u]) => `<div class="row"><span>${l}</span><b>${v ?? '—'}${u}</b></div>`).join('');
 
   document.getElementById('aqi-rows').innerHTML = [
-    ['US AQI', h.us_aqi?.[idx],  ''],
-    ['PM2.5',  h.pm2_5?.[idx],   ' μg/m³'],
-  ].map(([l, v, u]) => `<div class="row"><span>${l}</span><b>${v != null ? v.toFixed(0) : '—'}${u}</b></div>`).join('');
+    [t('tracts'), summary.tract_count.toLocaleString(), ''],
+    [t('avgExposure'), (summary.averages.exposure * 100).toFixed(0), '%'],
+    [t('avgVulnerability'), (summary.averages.vulnerability * 100).toFixed(0), '%'],
+    [t('avgEquityRisk'), (summary.averages.equity_risk * 100).toFixed(0), '%'],
+  ].map(([l, v, u]) => `<div class="row"><span>${l}</span><b>${v}${u}</b></div>`).join('');
 
   document.getElementById('info-panel').style.display = 'block';
 }
 
 function renderTractInfo(props) {
+  latestTractProps = props;
   // -1 is the no-data sentinel; treat it as missing
   const valid = (v) => v != null && v >= 0;
   const fmt = (v, fn) => valid(v) ? fn(v) : '—';
   const incomeFmt = v => '$' + Math.round(v).toLocaleString();
   const povFmt    = v => (v * 100).toFixed(1) + '%';
+  const pctFmt    = v => (v * 100).toFixed(0) + '%';
   const yrFmt     = v => Math.round(v).toString();
 
-  let risk = 'Low', riskColor = '#52c41a', riskBg = '#f6ffed';
-  if (valid(props.income) && props.income < 60000) { risk = 'Elevated'; riskColor = '#fa8c16'; riskBg = '#fff7e6'; }
-  if (valid(props.poverty_rate) && props.poverty_rate > 0.15) { risk = 'High'; riskColor = '#f5222d'; riskBg = '#fff1f0'; }
+  let risk = t('lowRisk'), riskColor = '#52c41a', riskBg = '#f6ffed';
+  if (valid(props.equity_risk) && props.equity_risk >= 0.45) { risk = t('elevatedRisk'); riskColor = '#fa8c16'; riskBg = '#fff7e6'; }
+  if (valid(props.equity_risk) && props.equity_risk >= 0.58) { risk = t('highRisk'); riskColor = '#f5222d'; riskBg = '#fff1f0'; }
 
-  document.getElementById('tract-name').textContent = props.name || `Tract ${props.TRACT}`;
-  const allergenFmt = v => (v * 100).toFixed(0) + '%';
+  document.getElementById('tract-name').textContent = props.name || `${t('tractPrefix')} ${props.TRACT}`;
   document.getElementById('tract-rows').innerHTML = `
     <div class="risk-badge" style="color:${riskColor};background:${riskBg};">
-      ${risk} allergen health risk
+      ${risk} ${t('allergyEquityRiskLower')}
     </div>
-    <div class="row"><span>Allergen Score</span><b>${props.allergen != null ? allergenFmt(props.allergen) : '—'}</b></div>
-    <div class="row"><span>Median Income</span><b>${fmt(props.income, incomeFmt)}</b></div>
-    <div class="row"><span>Poverty Rate</span><b>${fmt(props.poverty_rate, povFmt)}</b></div>
-    <div class="row"><span>Median Year Built</span><b>${fmt(props.year_built, yrFmt)}</b></div>
+    <div class="row"><span>${t('equityRisk')}</span><b>${fmt(props.equity_risk, pctFmt)}</b></div>
+    <div class="row"><span>${t('exposureProxy')}</span><b>${fmt(props.exposure, pctFmt)}</b></div>
+    <div class="row"><span>${t('socialVulnerability')}</span><b>${fmt(props.vulnerability, pctFmt)}</b></div>
+    <div class="row"><span>${t('exposureMethod')}</span><b>${props.exposure_samples_used || '—'} ${t('pointIdw')}</b></div>
+    <div class="row"><span>${t('pollenPeakEst')}</span><b>${fmt(props.estimated_pollen_peak, v => v.toFixed(1))}</b></div>
+    <div class="row"><span>${t('pollenAvgEst')}</span><b>${fmt(props.estimated_pollen_average, v => v.toFixed(1))}</b></div>
+    <div class="row"><span>${t('pm25AvgEst')}</span><b>${fmt(props.estimated_pm25_average, v => v.toFixed(1))} μg/m³</b></div>
+    <div class="row"><span>${t('aqiAvgEst')}</span><b>${fmt(props.estimated_aqi_average, v => v.toFixed(0))}</b></div>
+    <div class="row"><span>${t('ozoneAvgEst')}</span><b>${fmt(props.estimated_ozone_average, v => v.toFixed(1))}</b></div>
+    <div class="row"><span>${t('medianIncome')}</span><b>${fmt(props.income, incomeFmt)}</b></div>
+    <div class="row"><span>${t('povertyRate')}</span><b>${fmt(props.poverty_rate, povFmt)}</b></div>
+    <div class="row"><span>${t('renters')}</span><b>${fmt(props.renter_pct, povFmt)}</b></div>
+    <div class="row"><span>${t('ageSensitivePop')}</span><b>${fmt(props.age_sensitive_pct, povFmt)}</b></div>
+    <div class="row"><span>${t('peopleOfColor')}</span><b>${fmt(props.people_of_color_pct, povFmt)}</b></div>
+    <div class="row"><span>${t('medianYearBuilt')}</span><b>${fmt(props.year_built, yrFmt)}</b></div>
   `;
 
   document.getElementById('tract-info').style.display = 'block';
@@ -721,27 +957,44 @@ function renderTractInfo(props) {
 //  CONTROLS
 // ══════════════════════════════════════════════
 function setupControls() {
+  document.getElementById('langToggle').addEventListener('click', () => {
+    setLanguage(currentLang === 'en' ? 'zh' : 'en');
+  });
+
   document.querySelectorAll('input[name="pollen"]').forEach(radio => {
     radio.addEventListener('change', e => {
       const chosen = e.target.value;
       document.querySelectorAll('input[name="pollen"]').forEach(r => {
         r.closest('.radio-row').classList.toggle('active', r.value === chosen);
       });
-      ['TREE_UPI', 'GRASS_UPI', 'WEED_UPI'].forEach(type => {
-        map.setLayoutProperty(`pollen-${type}`, 'visibility',
-          type === chosen ? 'visible' : 'none');
-      });
+      if (chosen !== 'none') {
+        activeSES = chosen;
+        document.querySelectorAll('input[name="ses"]').forEach(r => {
+          r.checked = r.value === chosen;
+          r.closest('.radio-row').classList.toggle('active', r.value === chosen);
+        });
+      }
+      updateSESLayer(activeSES);
+      renderLegend(activeSES);
+      updateScatterChart(activeSES);
     });
   });
 
   document.querySelectorAll('input[name="ses"]').forEach(radio => {
     radio.addEventListener('change', e => {
       activeSES = e.target.value;
-      document.querySelectorAll('.radio-row').forEach(r => r.classList.remove('active'));
+      document.querySelectorAll('input[name="ses"]').forEach(r => {
+        r.closest('.radio-row').classList.toggle('active', r.value === activeSES);
+      });
       e.target.closest('.radio-row').classList.add('active');
       updateSESLayer(activeSES);
       renderLegend(activeSES);
+      updateScatterChart(activeSES);
     });
+  });
+
+  document.getElementById('samplePointsToggle').addEventListener('change', e => {
+    setSamplePointsVisible(e.target.checked);
   });
 
   // hover
@@ -783,59 +1036,31 @@ function setupControls() {
 // ══════════════════════════════════════════════
 //  MAIN
 // ══════════════════════════════════════════════
+applyLanguage();
+
 map.on('load', async () => {
   const loadingEl = document.getElementById('loading');
   try {
-    loadingEl.querySelector('div:last-child').textContent = 'Fetching data…';
-
-    // Phase 1: fast fetches needed before map layers can be added
-    const harrisonData = await fetchOpenMeteo(HARRISON.lat, HARRISON.lng);
-
-    addGooglePollenLayers(); // raster tile sources registered; all hidden until user selects
-
-    const hIdx = currentHourIdx(harrisonData.hourly.time);
-    renderInfoPanel(harrisonData, hIdx);
-
-    loadingEl.querySelector('div:last-child').textContent = 'Fetching census tracts & pollen data…';
-
-    // Phase 2: heavy fetches all in parallel
-    const [tractGeoResult, acsResult, cityPollenResult] = await Promise.allSettled([
-      fetchTractBoundaries(),
-      fetchACSData(),
-      fetchAllCitiesGooglePollen()
+    loadingEl.querySelector('[data-i18n="loading"]').textContent = t('loadingResearchData');
+    const [tractGeo, summary, sampleGeo] = await Promise.all([
+      fetch(LOCAL_GEOJSON_URL).then(r => { if (!r.ok) throw new Error(`Local GeoJSON ${r.status}`); return r.json(); }),
+      fetch(LOCAL_SUMMARY_URL).then(r => { if (!r.ok) throw new Error(`Local summary ${r.status}`); return r.json(); }),
+      fetch(LOCAL_EXPOSURE_SAMPLES_URL).then(r => { if (!r.ok) throw new Error(`Exposure samples ${r.status}`); return r.json(); })
     ]);
 
-    if (tractGeoResult.status === 'fulfilled') {
-      const tractGeo = tractGeoResult.value;
-      if (acsResult.status === 'fulfilled') {
-        tractGeoJSON = joinACS(tractGeo, acsResult.value);
-      } else {
-        console.warn('ACS data failed:', acsResult.reason?.message);
-        document.getElementById('key-warning').style.display = 'block';
-        tractGeoJSON = tractGeo;
-      }
-    } else {
-      console.warn('Tract boundaries failed:', tractGeoResult.reason?.message);
-    }
-
-    const cityPollen = cityPollenResult.status === 'fulfilled' ? cityPollenResult.value : [];
-    if (cityPollenResult.status === 'rejected') {
-      console.warn('Google Pollen failed:', cityPollenResult.reason?.message);
-    }
-
-    if (tractGeoJSON) {
-      attachAllergenToTracts(tractGeoJSON, cityPollen);
-      addTractLayers(tractGeoJSON);
-      updateSESLayer(activeSES);
-      setupControls();
-      buildScatterChart(tractGeoJSON);
-    }
+    tractGeoJSON = tractGeo;
+    renderInfoPanel(summary);
+    addTractLayers(tractGeoJSON);
+    addExposureSampleLayers(sampleGeo);
+    updateSESLayer(activeSES);
+    setupControls();
+    buildScatterChart(tractGeoJSON);
 
     // Harrison marker
     new maplibregl.Marker({ color: '#e63946' })
       .setLngLat([HARRISON.lng, HARRISON.lat])
       .setPopup(new maplibregl.Popup({ offset: 25 })
-        .setHTML('<strong>Harrison, NY</strong><br>Allergen monitoring center'))
+        .setHTML(`<strong>Harrison, NY</strong><br>${t('harrisonPopup')}`))
       .addTo(map);
 
     renderLegend(activeSES);

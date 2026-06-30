@@ -1,73 +1,83 @@
-# Allergen Intensity Map — Harrison, NY
+# Allergy Equity Map — New York State
 
-A MapLibre GL JS map visualizing allergen source intensity around Harrison, NY (40.9676°N, 73.7124°W), using a combination of pollen, air quality, weather, and vegetation data.
-
----
-
-## Key Factors
-
-- **Pollen** — direct allergen counts by species
-- **Air quality / pollution** — PM2.5, PM10, ozone amplify allergen effects
-- **Weather** — wind speed/direction drives dispersal; humidity and precipitation suppress airborne pollen; temperature accelerates bloom seasons
-- **Vegetation / land cover** — identifies where allergen sources (oak, birch, ragweed, grass) are concentrated
+A static MapLibre GL JS research prototype for studying the relationship between environmental allergy exposure and social equity across New York State census tracts.
 
 ---
 
-## Data Sources
+## Research Question
 
-### Pollen
+Are socially vulnerable communities disproportionately exposed to higher local allergy risk when pollen, air pollution, and census-tract vulnerability indicators are combined?
 
-| Source | What it provides | Cost | API key? |
-|---|---|---|---|
-| [Open-Meteo Air Quality API](https://open-meteo.com/en/docs/air-quality-api) | Grass, birch, alder, ragweed pollen counts (hourly, 5-day forecast) | Free | No |
-| [Google Pollen API](https://developers.google.com/maps/documentation/pollen/overview) | Hyperlocal pollen by plant type, 5-day forecast, 65+ countries | 5,000 free calls/mo, then $10/1K | Yes (Google Cloud) |
-| [Ambee Pollen API](https://www.getambee.com/api/pollen) | Pollen counts by species, real-time | 15-day trial (100 calls/day), then paid | Yes |
+The current prototype treats this as an environmental exposure and vulnerability mapping problem, not as a medical diagnosis.
 
-### Air Quality / Pollution
+## What The Page Shows
 
-| Source | What it provides | Cost | API key? |
-|---|---|---|---|
-| [Open-Meteo Air Quality API](https://open-meteo.com/en/docs/air-quality-api) | PM2.5, PM10, NO₂, O₃, SO₂, CO, UV index (modeled) | Free | No |
-| [EPA AirNow API](https://docs.airnowapi.org/) | Real-time AQI from ground monitoring stations in Westchester County | Free | Yes (free registration) |
-| [NYSDEC Air Quality](https://dec.ny.gov/environmental-protection/air-quality/monitoring) | NY-specific real-time AQI and forecasts | Free (web) | No public API |
+- A New York State tract map with 5,411 census tracts.
+- An **Allergy Equity Risk** layer combining exposure and social vulnerability.
+- Separate layers for exposure proxy, social vulnerability, income, poverty, and demographic equity context.
+- A scatter plot comparing allergen exposure with social vulnerability.
+- Raw Open-Meteo exposure sample points shown directly on the map as a dense 0.25-degree grid clipped to New York State tracts.
+- Clickable tract details with IDW-estimated pollen, PM2.5, AQI, ozone, income, poverty, renter share, age-sensitive population, and people-of-color share.
+- A separate `correlation.html` page for interactive correlation analysis across tract variables.
 
-### Weather
+## Downloaded Data
 
-| Source | What it provides | Cost | API key? |
-|---|---|---|---|
-| [Open-Meteo Forecast API](https://open-meteo.com/) | Wind speed/direction, humidity, temperature, precipitation (hourly) | Free | No |
+Generated files live in `data/`:
 
-### Vegetation / Allergen Sources (static layers)
+- `data/ny-allergy-equity.geojson` — tract geometry plus joined research variables.
+- `data/ny-allergy-equity-summary.json` — method notes, sample locations, averages, and top equity-risk tracts.
+- `data/exposure-samples.geojson` — 2,700 Open-Meteo exposure sample points displayed on the map.
+- `data/exposure-raw-points.geojson` — raw point-shaped Open-Meteo API results with hourly pollen and air-quality time series.
 
-| Source | What it provides | Cost |
-|---|---|---|
-| [USDA Forest Service Tree Canopy Cover](https://data.fs.usda.gov/geodata/rastergateway/treecanopycover/) | Raster data showing tree density per area | Free |
-| [USDA PLANTS Database API](https://plants.usda.gov/) | Plant species info and allergenicity ratings | Free |
-| [IQAir Westchester County](https://www.iqair.com/us/pollen/usa/new-york/westchester-county) | Pollen count and allergy info for Westchester County | Free (web) |
+The download script uses:
 
----
+- U.S. Census TIGERweb tract boundaries.
+- ACS 2023 5-year socioeconomic and housing variables.
+- Open-Meteo Air Quality API pollen, PM2.5, AQI, and ozone forecasts.
 
-## Recommended Starter Stack (no API key required)
+## Index Method
 
-### Open-Meteo — Pollen + Air Quality + Weather
+**Exposure proxy** is estimated for each tract from nearby Open-Meteo sample points using inverse-distance weighted averaging. The assigned tract fields include pollen peak, pollen average, PM2.5 average, AQI average, ozone average, and the combined exposure score.
 
-```
-GET https://air-quality-api.open-meteo.com/v1/air-quality
-  ?latitude=40.9676
-  &longitude=-73.7124
-  &hourly=pm2_5,pm10,ozone,grass_pollen,birch_pollen,alder_pollen,ragweed_pollen
+**Social vulnerability** combines lower median household income, poverty rate, older median housing year, renter share, and child/older-adult population share.
+
+**Allergy equity risk** is:
+
+```text
+0.55 * exposure + 0.45 * social vulnerability
 ```
 
-### EPA AirNow — Ground Station AQI for Westchester County
+Race/ethnicity is included as demographic equity context, but it is not used inside the vulnerability score.
 
-Register for a free key at [docs.airnowapi.org](https://docs.airnowapi.org/), then query by zip code or lat/lng for real-time AQI readings from local monitoring stations.
+## Rebuild Data
 
-### USDA Tree Canopy — Static Vegetation Layer
+The Census ACS API requires a free key:
 
-Download GeoTIFF rasters from the [USDA Forest Service Geodata Clearinghouse](https://data.fs.usda.gov/geodata/rastergateway/treecanopycover/) to identify high tree-density zones correlating to pollen source intensity.
+```bash
+export CENSUS_API_KEY="your-census-key"
+npm run build:data
+```
 
----
+Refresh only the Open-Meteo exposure grid and tract exposure assignment:
 
-## Upgrade Path
+```bash
+npm run refresh:exposure
+```
 
-Add **Google Pollen API** (5,000 free calls/mo) for hyperlocal, species-level pollen detail once the prototype is working.
+For a different grid density:
+
+```bash
+EXPOSURE_GRID_STEP=0.25 npm run refresh:exposure
+```
+
+## Run Locally
+
+Open `index.html` directly in a browser, or use:
+
+```bash
+npm run serve
+```
+
+Then open `http://localhost:4173`.
+
+Open `http://localhost:4173/correlation.html` for the dedicated correlation analysis page.
