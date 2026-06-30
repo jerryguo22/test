@@ -25,6 +25,7 @@ const ACS_VARS = [
   "B17001_001E", // poverty universe
   "B17001_002E", // below poverty
   "B25035_001E", // median year built
+  "B25077_001E", // median owner-occupied home value
   "B25003_001E", // occupied housing units
   "B25003_003E", // renter occupied
   "B01003_001E", // total population
@@ -163,6 +164,7 @@ async function fetchACSData() {
     ].reduce((sum, key) => sum + Math.max(0, number(obj[key])), 0);
 
     const income = number(obj.B19013_001E);
+    const medianHomeValue = number(obj.B25077_001E);
     const povertyRate = povertyDenominator > 0 ? number(obj.B17001_002E) / povertyDenominator : -1;
     const renterPct = occupiedUnits > 0 ? number(obj.B25003_003E) / occupiedUnits : -1;
     const under18Pct = population > 0 ? under18 / population : -1;
@@ -183,6 +185,7 @@ async function fetchACSData() {
       name: obj.NAME,
       population,
       income: income > 0 ? income : -1,
+      median_home_value: medianHomeValue > 0 ? medianHomeValue : -1,
       poverty_rate: compact(povertyRate),
       year_built: yearBuilt > 0 ? yearBuilt : -1,
       renter_pct: compact(renterPct),
@@ -250,6 +253,7 @@ function attachResearchMetrics(geojson, acs, samples) {
     Object.assign(feature.properties, acsRow || {
       population: -1,
       income: -1,
+      median_home_value: -1,
       poverty_rate: -1,
       year_built: -1,
       renter_pct: -1,
