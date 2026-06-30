@@ -275,13 +275,14 @@
         obs2Title: 'D areas show the highest average exposure.',
         obs2Body: 'Average allergen exposure rises from A/B/C to D in the tract-centroid overlay.',
         obs3Title: 'Housing tenure matters.',
-        obs3Body: 'Renter share is highest in D areas, matching the separate correlation result where renter share is the second strongest socioeconomic signal.',
+        obs3Body: 'Renter share is highest in D areas, while home values are also high in many HOLC-covered urban areas. This points to housing-market geography, not a simple low-value story.',
         cautionText: 'This page frames a historical hypothesis: allergy exposure should be studied as an environmental equity issue shaped by historical urban space. It does not claim redlining alone caused present-day pollen or air-quality patterns.',
         tracts: 'tracts',
         avgExposure: 'avg exposure',
         peopleOfColor: 'people of color',
         poverty: 'poverty',
-        renters: 'renters'
+        renters: 'renters',
+        homeValue: 'home value'
       },
       zh: {
         title: '过敏作为历史环境不平等',
@@ -309,13 +310,14 @@
         obs2Title: 'D 级区域的平均暴露最高。',
         obs2Body: '在 tract 质心叠加中，平均过敏暴露从 A/B/C 到 D 整体升高。',
         obs3Title: '住房占有形态很重要。',
-        obs3Body: 'D 级区域的租户比例最高，这也呼应了相关性页面中“租户比例”是第二强社会经济信号。',
+        obs3Body: 'D 级区域的租户比例最高，同时许多 HOLC 覆盖的城市区域房屋价值也较高。这指向住房市场地理格局，而不是简单的低房价故事。',
         cautionText: '这个页面提出一个历史假设：过敏暴露应被研究为由历史城市空间塑造的环境公平问题。它并不声称 redlining 单独造成了今天的花粉或空气质量格局。',
         tracts: '个 tracts',
         avgExposure: '平均暴露',
         peopleOfColor: '有色人种',
         poverty: '贫困率',
-        renters: '租户比例'
+        renters: '租户比例',
+        homeValue: '房屋价值'
       }
     };
 
@@ -359,7 +361,7 @@
             <div class="grade-chip" style="background:${colors[grade]}">${grade}</div>
             <div>
               <strong>${row.tract_count.toLocaleString()} ${t('tracts')} · ${t('avgExposure')} ${pct(row.avg_exposure)}</strong>
-              <span>${t('peopleOfColor')} ${pct(row.avg_people_of_color_pct)} · ${t('poverty')} ${pct(row.avg_poverty_rate)} · ${t('renters')} ${pct(row.avg_renter_pct)}</span>
+              <span>${t('peopleOfColor')} ${pct(row.avg_people_of_color_pct)} · ${t('poverty')} ${pct(row.avg_poverty_rate)} · ${t('renters')} ${pct(row.avg_renter_pct)} · ${t('homeValue')} $${Math.round(row.avg_median_home_value).toLocaleString()}</span>
             </div>
           </div>
         `;
@@ -447,6 +449,27 @@
         rect.height - (yOffset + (lat - bbox[1]) * scale)
       ];
 
+      ctx.strokeStyle = 'rgba(82,96,91,0.16)';
+      ctx.lineWidth = 1;
+      ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillStyle = '#6b7772';
+      for (let lng = -79; lng <= -72; lng += 1) {
+        const [x1, y1] = project([lng, bbox[1]]);
+        const [x2, y2] = project([lng, bbox[3]]);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+      for (let lat = 41; lat <= 45; lat += 1) {
+        const [x1, y1] = project([bbox[0], lat]);
+        const [x2, y2] = project([bbox[2], lat]);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+
       function drawRing(ring) {
         ring.forEach((point, index) => {
           const [x, y] = project(point);
@@ -483,8 +506,45 @@
         ctx.lineWidth = 0.8;
         ctx.stroke();
       });
+
+      const cities = [
+        ['Buffalo', -78.8784, 42.8864],
+        ['Rochester', -77.6088, 43.1566],
+        ['Syracuse', -76.1474, 43.0481],
+        ['Albany', -73.7562, 42.6526],
+        ['NYC', -74.0060, 40.7128],
+        ['Long Island', -73.08, 40.82]
+      ];
+      ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.textBaseline = 'middle';
+      cities.forEach(([name, lng, lat]) => {
+        const [x, y] = project([lng, lat]);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#17211d';
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.86)';
+        const width = ctx.measureText(name).width + 8;
+        ctx.fillRect(x + 6, y - 9, width, 18);
+        ctx.fillStyle = '#3d4944';
+        ctx.fillText(name, x + 10, y);
+      });
       ctx.globalAlpha = 1;
     }
+
+    const BASEMAP_STYLE = {
+      version: 8,
+      sources: {
+        osm: {
+          type: 'raster',
+          tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          attribution: '&copy; OpenStreetMap contributors'
+        }
+      },
+      layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
+    };
 
     let map = null;
     let mapLayersAdded = false;
@@ -546,6 +606,7 @@
         map.on('mouseenter', layer, () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', layer, () => { map.getCanvas().style.cursor = ''; });
       }
+      document.getElementById('fallbackMap').style.display = 'none';
     }
 
     async function loadData() {
@@ -584,7 +645,7 @@
       }
       map = new maplibregl.Map({
         container: 'map',
-        style: 'https://tiles.openfreemap.org/styles/bright',
+        style: BASEMAP_STYLE,
         center: [-75.1, 42.75],
         zoom: 6.7
       });

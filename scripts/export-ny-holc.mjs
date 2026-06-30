@@ -186,6 +186,7 @@ async function main() {
       avg_exposure: compact(average(rowsForGrade.map((p) => p.exposure))),
       avg_people_of_color_pct: compact(average(rowsForGrade.map((p) => p.people_of_color_pct))),
       avg_poverty_rate: compact(average(rowsForGrade.map((p) => p.poverty_rate))),
+      avg_median_home_value: compact(average(rowsForGrade.map((p) => p.median_home_value)), 0),
       avg_renter_pct: compact(average(rowsForGrade.map((p) => p.renter_pct)))
     };
   }
