@@ -1,0 +1,48 @@
+{
+  "generated_at": "2026-06-30T23:00:57.449Z",
+  "holc_feature_count": 891,
+  "source": "Mapping Inequality: Redlining in New Deal America, University of Richmond Digital Scholarship Lab",
+  "method": "HOLC grade is assigned to a census tract when the tract centroid falls inside a New York HOLC area. This is a historical spatial overlay, not causal proof.",
+  "grade_summary": {
+    "A": {
+      "tract_count": 69,
+      "avg_exposure": 0.2049,
+      "avg_people_of_color_pct": 0.2915,
+      "avg_poverty_rate": 0.0719,
+      "avg_median_home_value": 806806,
+      "avg_renter_pct": 0.3534
+    },
+    "B": {
+      "tract_count": 422,
+      "avg_exposure": 0.2108,
+      "avg_people_of_color_pct": 0.583,
+      "avg_poverty_rate": 0.1582,
+      "avg_median_home_value": 741116,
+      "avg_renter_pct": 0.5756
+    },
+    "C": {
+      "tract_count": 1075,
+      "avg_exposure": 0.2126,
+      "avg_people_of_color_pct": 0.7144,
+      "avg_poverty_rate": 0.1762,
+      "avg_median_home_value": 696783,
+      "avg_renter_pct": 0.5855
+    },
+    "D": {
+      "tract_count": 647,
+      "avg_exposure": 0.2158,
+      "avg_people_of_color_pct": 0.7096,
+      "avg_poverty_rate": 0.2176,
+      "avg_median_home_value": 865444,
+      "avg_renter_pct": 0.7263
+    },
+    "None": {
+      "tract_count": 3193,
+      "avg_exposure": 0.1861,
+      "avg_people_of_color_pct": 0.3063,
+      "avg_poverty_rate": 0.1131,
+      "avg_median_home_value": 455269,
+      "avg_renter_pct": 0.3063
+    }
+  }
+}

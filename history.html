@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Allergy as Historical Environmental Inequality</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" />
+  <script defer src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #17211d; }
+    body { background: #f5f6f3; }
+    header {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #d7ddd8;
+      background: #fff;
+    }
+    h1 { margin: 0; font-size: 20px; line-height: 1.2; }
+    header p { margin: 3px 0 0; color: #64706a; font-size: 12px; }
+    .header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    a { color: #0b6b63; font-size: 13px; font-weight: 760; text-decoration: none; }
+    button {
+      min-height: 32px;
+      padding: 0 12px;
+      border: 1px solid #cbd5cf;
+      border-radius: 4px;
+      background: #fff;
+      color: #17211d;
+      font-size: 12px;
+      font-weight: 760;
+      cursor: pointer;
+    }
+    main {
+      height: calc(100vh - 64px);
+      display: grid;
+      grid-template-columns: 330px minmax(520px, 1fr) 360px;
+      gap: 12px;
+      padding: 12px;
+    }
+    .panel {
+      min-width: 0;
+      border: 1px solid #d7ddd8;
+      border-radius: 4px;
+      background: #fff;
+      overflow: hidden;
+    }
+    .sidebar, .evidence { padding: 16px; overflow: auto; }
+    .section-label {
+      margin: 0 0 9px;
+      color: #52605b;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .claim {
+      margin: 0 0 14px;
+      color: #23312c;
+      font-size: 15px;
+      line-height: 1.5;
+      font-weight: 680;
+    }
+    .note {
+      margin: 12px 0 0;
+      color: #64706a;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .metric-list { display: grid; gap: 8px; margin: 12px 0 16px; }
+    .metric {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 9px;
+      align-items: center;
+      padding: 9px;
+      border: 1px solid #e1e6e2;
+      border-radius: 4px;
+      background: #fbfcfb;
+    }
+    .grade-chip {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      color: #121815;
+      font-size: 14px;
+      font-weight: 850;
+    }
+    .metric strong { display: block; font-size: 13px; }
+    .metric span { display: block; margin-top: 2px; color: #64706a; font-size: 11px; line-height: 1.35; }
+    .map-panel { position: relative; }
+    #map { position: absolute; inset: 0; }
+    #fallbackMap {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .map-controls {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 2;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      max-width: calc(100% - 24px);
+    }
+    .map-controls label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 30px;
+      padding: 0 10px;
+      border: 1px solid #d7ddd8;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.94);
+      color: #24302b;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.08);
+    }
+    .legend {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      z-index: 2;
+      width: 220px;
+      padding: 12px;
+      border: 1px solid #d7ddd8;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.94);
+      box-shadow: 0 1px 10px rgba(0,0,0,0.1);
+    }
+    .legend-row { display: flex; align-items: center; gap: 8px; margin-top: 7px; color: #3b4742; font-size: 11px; }
+    .swatch { width: 18px; height: 10px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.16); }
+    .evidence-card {
+      padding: 12px;
+      border: 1px solid #e1e6e2;
+      border-radius: 4px;
+      background: #fbfcfb;
+      margin-bottom: 10px;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .evidence-card strong { display: block; margin-bottom: 4px; font-size: 13px; color: #17211d; }
+    .chart-wrap { height: 230px; margin: 10px 0 14px; }
+    #loading {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,0.86);
+      color: #52605b;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    @media (max-width: 1150px) {
+      main { height: auto; grid-template-columns: 1fr; }
+      .map-panel { min-height: 680px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1 data-i18n="title">Allergy as Historical Environmental Inequality</h1>
+      <p data-i18n="subtitle">Redlining, race, housing, and allergen exposure in New York State.</p>
+    </div>
+    <div class="header-actions">
+      <a href="index.html" data-i18n="mapLink">Map</a>
+      <a href="correlation.html" data-i18n="correlationLink">Correlation</a>
+      <button type="button" id="langToggle">中文</button>
+    </div>
+  </header>
+
+  <main>
+    <aside class="panel sidebar">
+      <p class="section-label" data-i18n="frameLabel">Research Frame</p>
+      <p class="claim" data-i18n="claim">
+        Allergy exposure looks natural, but its geography may carry the afterlife of racial segregation, housing inequality, and uneven environmental investment.
+      </p>
+
+      <p class="section-label" data-i18n="gradeLabel">HOLC Grade Summary</p>
+      <div class="metric-list" id="gradeList"></div>
+
+      <p class="section-label" data-i18n="methodLabel">Method</p>
+      <p class="note" data-i18n="methodText">
+        HOLC grade is assigned when a tract centroid falls inside a historical HOLC area. This is a spatial overlay and correlation frame, not proof of causality.
+      </p>
+      <p class="note" data-i18n="sourceText">
+        Historical polygons: Mapping Inequality, University of Richmond Digital Scholarship Lab. Contemporary exposure: Open-Meteo sample estimates joined to ACS 2023 census tracts.
+      </p>
+    </aside>
+
+    <section class="panel map-panel">
+      <div id="map"></div>
+      <canvas id="fallbackMap"></canvas>
+      <div id="loading" data-i18n="loading">Loading historical layers...</div>
+      <div class="map-controls">
+        <label><input type="checkbox" id="holcToggle" checked> <span data-i18n="holcLayer">HOLC redlining</span></label>
+        <label><input type="checkbox" id="tractToggle" checked> <span data-i18n="tractLayer">Tract exposure</span></label>
+      </div>
+      <div class="legend">
+        <p class="section-label" data-i18n="legendLabel">Legend</p>
+        <div class="legend-row"><span class="swatch" style="background:#76a865"></span><span data-i18n="gradeA">A Best</span></div>
+        <div class="legend-row"><span class="swatch" style="background:#7cb5bd"></span><span data-i18n="gradeB">B Still Desirable</span></div>
+        <div class="legend-row"><span class="swatch" style="background:#ffff00"></span><span data-i18n="gradeC">C Definitely Declining</span></div>
+        <div class="legend-row"><span class="swatch" style="background:#d9838d"></span><span data-i18n="gradeD">D Hazardous / redlined</span></div>
+        <div class="legend-row"><span class="swatch" style="background:linear-gradient(to right,#edf8fb,#006d2c)"></span><span data-i18n="exposureLegend">Tract exposure, low to high</span></div>
+      </div>
+    </section>
+
+    <aside class="panel evidence">
+      <p class="section-label" data-i18n="evidenceLabel">What The Overlay Suggests</p>
+      <div class="evidence-card">
+        <strong data-i18n="obs1Title">Redlined areas remain socially distinct.</strong>
+        <span data-i18n="obs1Body">C and D HOLC areas have much higher people-of-color shares than A areas in the contemporary tract overlay.</span>
+      </div>
+      <div class="evidence-card">
+        <strong data-i18n="obs2Title">D areas show the highest average exposure.</strong>
+        <span data-i18n="obs2Body">Average allergen exposure rises from A/B/C to D in the tract-centroid overlay.</span>
+      </div>
+      <div class="evidence-card">
+        <strong data-i18n="obs3Title">Housing tenure matters.</strong>
+        <span data-i18n="obs3Body">Renter share is highest in D areas, matching the separate correlation result where renter share is the second strongest socioeconomic signal.</span>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="gradeChart"></canvas>
+      </div>
+      <p class="note" data-i18n="cautionText">
+        This page frames a historical hypothesis: allergy exposure should be studied as an environmental equity issue shaped by historical urban space. It does not claim redlining alone caused present-day pollen or air-quality patterns.
+      </p>
+    </aside>
+  </main>
+
+  <script>
+    const TRACT_URL = 'data/ny-allergy-equity.geojson';
+    const HOLC_URL = 'data/ny-holc-redlining.geojson';
+    const SUMMARY_URL = 'data/historical-equity-summary.json';
+    const I18N = {
+      en: {
+        title: 'Allergy as Historical Environmental Inequality',
+        subtitle: 'Redlining, race, housing, and allergen exposure in New York State.',
+        mapLink: 'Map',
+        correlationLink: 'Correlation',
+        frameLabel: 'Research Frame',
+        claim: 'Allergy exposure looks natural, but its geography may carry the afterlife of racial segregation, housing inequality, and uneven environmental investment.',
+        gradeLabel: 'HOLC Grade Summary',
+        methodLabel: 'Method',
+        methodText: 'HOLC grade is assigned when a tract centroid falls inside a historical HOLC area. This is a spatial overlay and correlation frame, not proof of causality.',
+        sourceText: 'Historical polygons: Mapping Inequality, University of Richmond Digital Scholarship Lab. Contemporary exposure: Open-Meteo sample estimates joined to ACS 2023 census tracts.',
+        loading: 'Loading historical layers...',
+        holcLayer: 'HOLC redlining',
+        tractLayer: 'Tract exposure',
+        legendLabel: 'Legend',
+        gradeA: 'A Best',
+        gradeB: 'B Still Desirable',
+        gradeC: 'C Definitely Declining',
+        gradeD: 'D Hazardous / redlined',
+        exposureLegend: 'Tract exposure, low to high',
+        evidenceLabel: 'What The Overlay Suggests',
+        obs1Title: 'Redlined areas remain socially distinct.',
+        obs1Body: 'C and D HOLC areas have much higher people-of-color shares than A areas in the contemporary tract overlay.',
+        obs2Title: 'D areas show the highest average exposure.',
+        obs2Body: 'Average allergen exposure rises from A/B/C to D in the tract-centroid overlay.',
+        obs3Title: 'Housing tenure matters.',
+        obs3Body: 'Renter share is highest in D areas, while home values are also high in many HOLC-covered urban areas. This points to housing-market geography, not a simple low-value story.',
+        cautionText: 'This page frames a historical hypothesis: allergy exposure should be studied as an environmental equity issue shaped by historical urban space. It does not claim redlining alone caused present-day pollen or air-quality patterns.',
+        tracts: 'tracts',
+        avgExposure: 'avg exposure',
+        peopleOfColor: 'people of color',
+        poverty: 'poverty',
+        renters: 'renters',
+        homeValue: 'home value'
+      },
+      zh: {
+        title: '过敏作为历史环境不平等',
+        subtitle: '纽约州的 redlining、种族、住房与过敏暴露。',
+        mapLink: '地图',
+        correlationLink: '相关性',
+        frameLabel: '研究框架',
+        claim: '过敏暴露看似是自然问题，但它的空间分布可能承载了种族隔离、住房不平等和环境投资不均的历史遗留。',
+        gradeLabel: 'HOLC 等级摘要',
+        methodLabel: '方法',
+        methodText: '当 census tract 的质心落入历史 HOLC 区域时，就给它赋予该 HOLC 等级。这是历史空间叠加和相关性框架，不是因果证明。',
+        sourceText: '历史多边形：University of Richmond Digital Scholarship Lab 的 Mapping Inequality。当前暴露：Open-Meteo 采样估计与 ACS 2023 census tracts 连接。',
+        loading: '正在加载历史图层...',
+        holcLayer: 'HOLC redlining',
+        tractLayer: 'Tract 暴露',
+        legendLabel: '图例',
+        gradeA: 'A 最佳',
+        gradeB: 'B 仍然理想',
+        gradeC: 'C 明显衰退',
+        gradeD: 'D 危险 / redlined',
+        exposureLegend: 'Tract 暴露，从低到高',
+        evidenceLabel: '叠加结果提示什么',
+        obs1Title: '被 redline 的区域在今天仍有明显社会差异。',
+        obs1Body: '在当前 census tract 叠加中，C 和 D 级 HOLC 区域的有色人种比例明显高于 A 级区域。',
+        obs2Title: 'D 级区域的平均暴露最高。',
+        obs2Body: '在 tract 质心叠加中，平均过敏暴露从 A/B/C 到 D 整体升高。',
+        obs3Title: '住房占有形态很重要。',
+        obs3Body: 'D 级区域的租户比例最高，同时许多 HOLC 覆盖的城市区域房屋价值也较高。这指向住房市场地理格局，而不是简单的低房价故事。',
+        cautionText: '这个页面提出一个历史假设：过敏暴露应被研究为由历史城市空间塑造的环境公平问题。它并不声称 redlining 单独造成了今天的花粉或空气质量格局。',
+        tracts: '个 tracts',
+        avgExposure: '平均暴露',
+        peopleOfColor: '有色人种',
+        poverty: '贫困率',
+        renters: '租户比例',
+        homeValue: '房屋价值'
+      }
+    };
+
+    const queryParams = new URLSearchParams(window.location.search);
+    let currentLang = queryParams.get('lang') || localStorage.getItem('allergyEquityLang') || 'en';
+    if (!I18N[currentLang]) currentLang = 'en';
+    let summaryData = null;
+    let gradeChart = null;
+
+    function t(key) {
+      return I18N[currentLang][key] || I18N.en[key] || key;
+    }
+
+    function applyLanguage() {
+      document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+      document.title = t('title');
+      document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+      document.getElementById('langToggle').textContent = currentLang === 'en' ? '中文' : 'English';
+      if (summaryData) {
+        renderGradeList(summaryData);
+        renderChart(summaryData);
+      }
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('allergyEquityLang', lang);
+      applyLanguage();
+    }
+
+    function pct(value, digits = 1) {
+      return value == null || value < 0 ? '--' : `${(value * 100).toFixed(digits)}%`;
+    }
+
+    function renderGradeList(summary) {
+      const colors = { A: '#76a865', B: '#7cb5bd', C: '#ffff00', D: '#d9838d' };
+      document.getElementById('gradeList').innerHTML = ['A', 'B', 'C', 'D'].map(grade => {
+        const row = summary.grade_summary[grade];
+        return `
+          <div class="metric">
+            <div class="grade-chip" style="background:${colors[grade]}">${grade}</div>
+            <div>
+              <strong>${row.tract_count.toLocaleString()} ${t('tracts')} · ${t('avgExposure')} ${pct(row.avg_exposure)}</strong>
+              <span>${t('peopleOfColor')} ${pct(row.avg_people_of_color_pct)} · ${t('poverty')} ${pct(row.avg_poverty_rate)} · ${t('renters')} ${pct(row.avg_renter_pct)} · ${t('homeValue')} $${Math.round(row.avg_median_home_value).toLocaleString()}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderChart(summary) {
+      if (typeof Chart === 'undefined') return;
+      const labels = ['A', 'B', 'C', 'D'];
+      const values = labels.map(grade => summary.grade_summary[grade].avg_exposure * 100);
+      if (!gradeChart) {
+        gradeChart = new Chart(document.getElementById('gradeChart'), {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              data: values,
+              backgroundColor: ['#76a865', '#7cb5bd', '#ffff00', '#d9838d'],
+              borderColor: '#17211d',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: '#52605b' } },
+              y: {
+                title: { display: true, text: t('avgExposure'), color: '#52605b', font: { size: 11, weight: 700 } },
+                ticks: { color: '#52605b', callback: v => `${v.toFixed(0)}%` },
+                grid: { color: '#e7ebe8' }
+              }
+            }
+          }
+        });
+      } else {
+        gradeChart.data.datasets[0].data = values;
+        gradeChart.options.scales.y.title.text = t('avgExposure');
+        gradeChart.update('none');
+      }
+    }
+
+    function popupHtml(props) {
+      if (props.grade) {
+        return `<strong>${props.city} ${props.label}</strong><br>HOLC ${props.grade}: ${props.category}`;
+      }
+      return `
+        <strong>${props.name || props.NAME || 'Census tract'}</strong><br>
+        HOLC: ${props.holc_grade || 'None'} ${props.holc_city ? `(${props.holc_city})` : ''}<br>
+        ${t('avgExposure')}: ${pct(Number(props.exposure), 1)}<br>
+        ${t('peopleOfColor')}: ${pct(Number(props.people_of_color_pct), 1)}
+      `;
+    }
+
+    function exposureColor(value) {
+      if (!Number.isFinite(value) || value < 0) return '#cccccc';
+      if (value < 0.16) return '#edf8fb';
+      if (value < 0.20) return '#b2e2e2';
+      if (value < 0.23) return '#66c2a4';
+      if (value < 0.26) return '#2ca25f';
+      return '#006d2c';
+    }
+
+    function drawFallbackMap(tractGeo, holcGeo) {
+      const canvas = document.getElementById('fallbackMap');
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.round(rect.width * dpr));
+      canvas.height = Math.max(1, Math.round(rect.height * dpr));
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+      ctx.fillStyle = '#eef2ee';
+      ctx.fillRect(0, 0, rect.width, rect.height);
+
+      const bbox = [-79.9, 40.3, -71.7, 45.1];
+      const pad = 22;
+      const scale = Math.min((rect.width - pad * 2) / (bbox[2] - bbox[0]), (rect.height - pad * 2) / (bbox[3] - bbox[1]));
+      const xOffset = (rect.width - (bbox[2] - bbox[0]) * scale) / 2;
+      const yOffset = (rect.height - (bbox[3] - bbox[1]) * scale) / 2;
+      const project = ([lng, lat]) => [
+        xOffset + (lng - bbox[0]) * scale,
+        rect.height - (yOffset + (lat - bbox[1]) * scale)
+      ];
+
+      ctx.strokeStyle = 'rgba(82,96,91,0.16)';
+      ctx.lineWidth = 1;
+      ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.fillStyle = '#6b7772';
+      for (let lng = -79; lng <= -72; lng += 1) {
+        const [x1, y1] = project([lng, bbox[1]]);
+        const [x2, y2] = project([lng, bbox[3]]);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+      for (let lat = 41; lat <= 45; lat += 1) {
+        const [x1, y1] = project([bbox[0], lat]);
+        const [x2, y2] = project([bbox[2], lat]);
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.stroke();
+      }
+
+      function drawRing(ring) {
+        ring.forEach((point, index) => {
+          const [x, y] = project(point);
+          if (index === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.closePath();
+      }
+
+      function drawFeature(feature) {
+        const polygons = feature.geometry.type === 'Polygon'
+          ? [feature.geometry.coordinates]
+          : feature.geometry.coordinates;
+        polygons.forEach(polygon => polygon.forEach(drawRing));
+      }
+
+      tractGeo.features.forEach(feature => {
+        ctx.beginPath();
+        drawFeature(feature);
+        ctx.fillStyle = exposureColor(Number(feature.properties.exposure));
+        ctx.globalAlpha = 0.58;
+        ctx.fill('evenodd');
+      });
+
+      const gradeColors = { A: '#76a865', B: '#7cb5bd', C: '#ffff00', D: '#d9838d' };
+      holcGeo.features.forEach(feature => {
+        ctx.beginPath();
+        drawFeature(feature);
+        ctx.globalAlpha = 0.42;
+        ctx.fillStyle = gradeColors[feature.properties.grade] || '#999999';
+        ctx.fill('evenodd');
+        ctx.globalAlpha = 0.75;
+        ctx.strokeStyle = '#3d1618';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+      });
+
+      const cities = [
+        ['Buffalo', -78.8784, 42.8864],
+        ['Rochester', -77.6088, 43.1566],
+        ['Syracuse', -76.1474, 43.0481],
+        ['Albany', -73.7562, 42.6526],
+        ['NYC', -74.0060, 40.7128],
+        ['Long Island', -73.08, 40.82]
+      ];
+      ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+      ctx.textBaseline = 'middle';
+      cities.forEach(([name, lng, lat]) => {
+        const [x, y] = project([lng, lat]);
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#17211d';
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(255,255,255,0.86)';
+        const width = ctx.measureText(name).width + 8;
+        ctx.fillRect(x + 6, y - 9, width, 18);
+        ctx.fillStyle = '#3d4944';
+        ctx.fillText(name, x + 10, y);
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    const BASEMAP_STYLE = {
+      version: 8,
+      sources: {
+        osm: {
+          type: 'raster',
+          tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+          tileSize: 256,
+          attribution: '&copy; OpenStreetMap contributors'
+        }
+      },
+      layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
+    };
+
+    let map = null;
+    let mapLayersAdded = false;
+    let tractGeoData = null;
+    let holcGeoData = null;
+
+    function addMapLayers() {
+      if (!map || mapLayersAdded || !tractGeoData || !holcGeoData || !map.isStyleLoaded()) return;
+      mapLayersAdded = true;
+      map.addSource('tracts', { type: 'geojson', data: tractGeoData });
+      map.addSource('holc', { type: 'geojson', data: holcGeoData });
+
+      map.addLayer({
+        id: 'tract-exposure',
+        type: 'fill',
+        source: 'tracts',
+        paint: {
+          'fill-color': ['interpolate', ['linear'], ['coalesce', ['get', 'exposure'], -1],
+            -1, '#cccccc',
+            0.10, '#edf8fb',
+            0.16, '#b2e2e2',
+            0.20, '#66c2a4',
+            0.23, '#2ca25f',
+            0.26, '#006d2c'],
+          'fill-opacity': 0.58
+        }
+      });
+      map.addLayer({
+        id: 'tract-outline',
+        type: 'line',
+        source: 'tracts',
+        paint: { 'line-color': '#2c3631', 'line-opacity': 0.15, 'line-width': 0.25 }
+      });
+      map.addLayer({
+        id: 'holc-fill',
+        type: 'fill',
+        source: 'holc',
+        paint: {
+          'fill-color': ['match', ['get', 'grade'], 'A', '#76a865', 'B', '#7cb5bd', 'C', '#ffff00', 'D', '#d9838d', '#999999'],
+          'fill-opacity': 0.34
+        }
+      });
+      map.addLayer({
+        id: 'holc-outline',
+        type: 'line',
+        source: 'holc',
+        paint: { 'line-color': '#3d1618', 'line-opacity': 0.72, 'line-width': 1.2 }
+      });
+
+      for (const layer of ['tract-exposure', 'holc-fill']) {
+        map.on('click', layer, e => {
+          const props = e.features?.[0]?.properties;
+          if (!props) return;
+          new maplibregl.Popup({ offset: 12, maxWidth: '280px' })
+            .setLngLat(e.lngLat)
+            .setHTML(popupHtml(props))
+            .addTo(map);
+        });
+        map.on('mouseenter', layer, () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', layer, () => { map.getCanvas().style.cursor = ''; });
+      }
+      document.getElementById('fallbackMap').style.display = 'none';
+    }
+
+    async function loadData() {
+      const [tractGeo, holcGeo, summary] = await Promise.all([
+        fetch(TRACT_URL).then(r => r.json()),
+        fetch(HOLC_URL).then(r => r.json()),
+        fetch(SUMMARY_URL).then(r => r.json())
+      ]);
+      tractGeoData = tractGeo;
+      holcGeoData = holcGeo;
+      summaryData = summary;
+
+      drawFallbackMap(tractGeo, holcGeo);
+      document.getElementById('holcToggle').addEventListener('change', e => {
+        if (!mapLayersAdded) return;
+        const visibility = e.target.checked ? 'visible' : 'none';
+        map.setLayoutProperty('holc-fill', 'visibility', visibility);
+        map.setLayoutProperty('holc-outline', 'visibility', visibility);
+      });
+      document.getElementById('tractToggle').addEventListener('change', e => {
+        if (!mapLayersAdded) return;
+        const visibility = e.target.checked ? 'visible' : 'none';
+        map.setLayoutProperty('tract-exposure', 'visibility', visibility);
+        map.setLayoutProperty('tract-outline', 'visibility', visibility);
+      });
+
+      applyLanguage();
+      document.getElementById('loading').style.display = 'none';
+      addMapLayers();
+    }
+
+    function initMap() {
+      if (typeof maplibregl === 'undefined') {
+        document.getElementById('map').style.background = '#eef2ee';
+        return;
+      }
+      map = new maplibregl.Map({
+        container: 'map',
+        style: BASEMAP_STYLE,
+        center: [-75.1, 42.75],
+        zoom: 6.7
+      });
+      map.addControl(new maplibregl.NavigationControl(), 'top-right');
+      map.on('load', addMapLayers);
+      map.on('styledata', addMapLayers);
+    }
+
+    initMap();
+    loadData().catch(error => {
+      document.getElementById('loading').textContent = error.message;
+    });
+    window.addEventListener('load', () => {
+      if (!map) initMap();
+      addMapLayers();
+      if (summaryData) applyLanguage();
+    });
+
+    document.getElementById('langToggle').addEventListener('click', () => {
+      setLanguage(currentLang === 'en' ? 'zh' : 'en');
+    });
+    applyLanguage();
+  </script>
+</body>
+</html>

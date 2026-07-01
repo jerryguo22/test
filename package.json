@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "build:data": "node scripts/build-dataset.mjs && node scripts/refresh-exposure-samples.mjs",
+    "enrich:age": "node scripts/enrich-age-fields.mjs",
+    "enrich:housing": "node scripts/enrich-housing-fields.mjs",
+    "export:holc": "node scripts/export-ny-holc.mjs",
+    "refresh:exposure": "node scripts/refresh-exposure-samples.mjs",
+    "serve": "python3 -m http.server 4173"
+  }
+}
