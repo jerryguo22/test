@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" />
   <script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="config.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body, html { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
@@ -230,8 +231,9 @@
 //  CONFIG — add your free Census API key here
 //  https://api.census.gov/data/key_signup.html
 // ════════════════════════════════════════════════
-const CENSUS_API_KEY   = 'd61d389d920acc81cf2b038c49e1b27f02b3014a';
-const GOOGLE_POLLEN_KEY = 'AIzaSyCKoSdYUayAG2oY6ebMOaKHQLJmajoYTr8';
+// API keys no longer used at runtime — data is served from /data/*.json
+// Google Pollen raster tiles still need a key; load it from config.js (gitignored)
+const GOOGLE_POLLEN_KEY = (typeof window !== 'undefined' && window.GOOGLE_POLLEN_KEY) || '';
 
 // ── constants ──────────────────────────────────
 const HARRISON   = { lat: 40.9676, lng: -73.7124 };
@@ -349,28 +351,12 @@ async function fetchOpenMeteo(lat, lng) {
   return r.json();
 }
 
-async function fetchGooglePollen(lat, lng) {
-  const url = `https://pollen.googleapis.com/v1/forecast:lookup`
-    + `?location.latitude=${lat.toFixed(4)}&location.longitude=${lng.toFixed(4)}`
-    + `&days=1&plantsDescription=false&key=${GOOGLE_POLLEN_KEY}`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`Google Pollen ${r.status}`);
-  const data = await r.json();
-  if (data.error) throw new Error(`Google Pollen: ${data.error.message}`);
-  const day = data.dailyInfo?.[0];
-  if (!day) return { lat, lng, tree: 0, grass: 0, weed: 0, composite: 0 };
-  const get = code => day.pollenTypeInfo?.find(p => p.code === code)?.indexInfo?.value ?? 0;
-  const tree = get('TREE'), grass = get('GRASS'), weed = get('WEED');
-  return { lat, lng, tree, grass, weed, composite: (tree + grass + weed) / 3 };
-}
-
 async function fetchAllCitiesGooglePollen() {
-  const results = await Promise.allSettled(
-    NY_CITIES.map(city => fetchGooglePollen(city.lat, city.lng).then(p => ({ ...city, ...p })))
-  );
-  const fulfilled = results.filter(r => r.status === 'fulfilled').map(r => r.value);
-  if (!fulfilled.length) throw new Error('Google Pollen returned no data for any city');
-  return fulfilled;
+  const r = await fetch('data/pollen.json');
+  if (!r.ok) throw new Error(`Pollen local data ${r.status}`);
+  const json = await r.json();
+  if (!json.cities?.length) throw new Error('Pollen data file is empty');
+  return json.cities;
 }
 
 async function fetchTractBoundaries() {
@@ -408,30 +394,26 @@ async function fetchTractBoundaries() {
 }
 
 async function fetchACSData() {
-  const key   = CENSUS_API_KEY ? `&key=${CENSUS_API_KEY}` : '';
-  const vars  = 'B19013_001E,B17001_002E,B17001_001E,B25035_001E';
-  const url   = `https://api.census.gov/data/2023/acs/acs5`
-    + `?get=NAME,${vars}&for=tract:*&in=state:${STATE}${key}`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(`Census API ${r.status}`);
+  const r = await fetch('data/acs.json');
+  if (!r.ok) throw new Error(`ACS local data ${r.status}`);
   const rows    = await r.json();
   const headers = rows[0];
   const map     = {};
   rows.slice(1).forEach(row => {
-    const obj    = {};
+    const obj   = {};
     headers.forEach((h, i) => obj[h] = row[i]);
     // Tract GEOID = state (2) + county (3) + tract (6) = 11 chars
-    const geoid  = String(obj.state).padStart(2,'0')
-                 + String(obj.county).padStart(3,'0')
-                 + String(obj.tract).padStart(6,'0');
+    const geoid = String(obj.state).padStart(2,'0')
+                + String(obj.county).padStart(3,'0')
+                + String(obj.tract).padStart(6,'0');
     const income = parseFloat(obj.B19013_001E);
     const povN   = parseFloat(obj.B17001_002E);
     const povD   = parseFloat(obj.B17001_001E);
     const yrBlt  = parseFloat(obj.B25035_001E);
     map[geoid] = {
-      income:       income > 0 ? income        : -1,
-      poverty_rate: povD   > 0 ? povN / povD   : -1,
-      year_built:   yrBlt  > 0 ? yrBlt         : -1,
+      income:       income > 0 ? income      : -1,
+      poverty_rate: povD   > 0 ? povN / povD : -1,
+      year_built:   yrBlt  > 0 ? yrBlt       : -1,
       name:         obj.NAME
     };
   });

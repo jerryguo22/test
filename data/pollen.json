@@ -1,0 +1,212 @@
+{
+  "fetched": "2026-06-30",
+  "cities": [
+    {
+      "name": "New York City",
+      "lat": 40.7128,
+      "lng": -74.006,
+      "tree": 0,
+      "grass": 2,
+      "weed": 0,
+      "composite": 0.6667
+    },
+    {
+      "name": "Buffalo",
+      "lat": 42.8864,
+      "lng": -78.8784,
+      "tree": 1,
+      "grass": 1,
+      "weed": 0,
+      "composite": 0.6667
+    },
+    {
+      "name": "Rochester",
+      "lat": 43.1566,
+      "lng": -77.6088,
+      "tree": 1,
+      "grass": 2,
+      "weed": 0,
+      "composite": 1.0
+    },
+    {
+      "name": "Syracuse",
+      "lat": 43.0481,
+      "lng": -76.1474,
+      "tree": 1,
+      "grass": 1,
+      "weed": 0,
+      "composite": 0.6667
+    },
+    {
+      "name": "Albany",
+      "lat": 42.6526,
+      "lng": -73.7562,
+      "tree": 1,
+      "grass": 2,
+      "weed": 0,
+      "composite": 1.0
+    },
+    {
+      "name": "Yonkers",
+      "lat": 40.9312,
+      "lng": -73.8988,
+      "tree": 0,
+      "grass": 3,
+      "weed": 0,
+      "composite": 1.0
+    },
+    {
+      "name": "Schenectady",
+      "lat": 42.8142,
+      "lng": -73.9396,
+      "tree": 1,
+      "grass": 2,
+      "weed": 0,
+      "composite": 1.0
+    },
+    {
+      "name": "Utica",
+      "lat": 43.1009,
+      "lng": -75.2327,
+      "tree": 1,
+      "grass": 1,
+      "weed": 0,
+      "composite": 0.6667
+    },
+    {
+      "name": "White Plains",
+      "lat": 41.034,
+      "lng": -73.7629,
+      "tree": 0,
+      "grass": 3,
+      "weed": 0,
+      "composite": 1.0
+    },
+    {
+      "name": "Troy",
+      "lat": 42.7284,
+      "lng": -73.6918,
+      "tree": 1,
+      "grass": 2,
+      "weed": 0,
+      "composite": 1.0
+    },
+    {
+      "name": "Binghamton",
+      "lat": 42.0987,
+      "lng": -75.918,
+      "tree": 1,
+      "grass": 2,
+      "weed": 0,
+      "composite": 1.0
+    },
+    {
+      "name": "Niagara Falls",
+      "lat": 43.0962,
+      "lng": -79.0377,
+      "tree": 1,
+      "grass": 1,
+      "weed": 0,
+      "composite": 0.6667
+    },
+    {
+      "name": "Ithaca",
+      "lat": 42.444,
+      "lng": -76.5021,
+      "tree": 1,
+      "grass": 2,
+      "weed": 0,
+      "composite": 1.0
+    },
+    {
+      "name": "Poughkeepsie",
+      "lat": 41.7004,
+      "lng": -73.9209,
+      "tree": 1,
+      "grass": 2,
+      "weed": 0,
+      "composite": 1.0
+    },
+    {
+      "name": "Watertown",
+      "lat": 43.9748,
+      "lng": -75.9107,
+      "tree": 1,
+      "grass": 1,
+      "weed": 0,
+      "composite": 0.6667
+    },
+    {
+      "name": "Saratoga Springs",
+      "lat": 43.0831,
+      "lng": -73.7846,
+      "tree": 1,
+      "grass": 2,
+      "weed": 0,
+      "composite": 1.0
+    },
+    {
+      "name": "Kingston",
+      "lat": 41.927,
+      "lng": -73.9974,
+      "tree": 1,
+      "grass": 2,
+      "weed": 0,
+      "composite": 1.0
+    },
+    {
+      "name": "Elmira",
+      "lat": 42.0898,
+      "lng": -76.8077,
+      "tree": 1,
+      "grass": 2,
+      "weed": 0,
+      "composite": 1.0
+    },
+    {
+      "name": "Plattsburgh",
+      "lat": 44.6995,
+      "lng": -73.4529,
+      "tree": 1,
+      "grass": 1,
+      "weed": 0,
+      "composite": 0.6667
+    },
+    {
+      "name": "Glens Falls",
+      "lat": 43.3095,
+      "lng": -73.644,
+      "tree": 1,
+      "grass": 2,
+      "weed": 0,
+      "composite": 1.0
+    },
+    {
+      "name": "Jamestown",
+      "lat": 42.097,
+      "lng": -79.2353,
+      "tree": 1,
+      "grass": 2,
+      "weed": 0,
+      "composite": 1.0
+    },
+    {
+      "name": "Ogdensburg",
+      "lat": 44.6945,
+      "lng": -75.4874,
+      "tree": 1,
+      "grass": 1,
+      "weed": 0,
+      "composite": 0.6667
+    },
+    {
+      "name": "Harrison",
+      "lat": 40.9676,
+      "lng": -73.7124,
+      "tree": 0,
+      "grass": 3,
+      "weed": 0,
+      "composite": 1.0
+    }
+  ]
+}
