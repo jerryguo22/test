@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NY Allergy Equity — Quadrant Analysis</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #f5f6f3;
+      color: #171b1a;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 18px;
+      border-bottom: 1px solid #d7ddd8;
+      background: #ffffff;
+    }
+    h1 {
+      margin: 0;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+    header p {
+      margin: 3px 0 0;
+      color: #64706a;
+      font-size: 12px;
+    }
+    a {
+      color: #0b6b63;
+      font-size: 13px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+    .tab-nav { display: flex; gap: 4px; }
+    .tab-link { padding: 7px 12px; border-radius: 4px; color: #52605b; font-size: 13px; font-weight: 760; text-decoration: none; }
+    .tab-link:hover { background: #f5f6f3; color: #171b1a; }
+    .tab-link.active { background: #eef7f4; color: #0b6b63; }
+    .lang-toggle {
+      min-height: 32px;
+      padding: 0 12px;
+      border: 1px solid #cbd5cf;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #171b1a;
+      font-size: 12px;
+      font-weight: 760;
+      cursor: pointer;
+    }
+    .lang-toggle:hover { background: #f5f6f3; }
+    main {
+      display: grid;
+      grid-template-columns: 300px minmax(480px, 1fr) 360px;
+      gap: 14px;
+      padding: 14px;
+    }
+    .panel {
+      border: 1px solid #d7ddd8;
+      border-radius: 4px;
+      background: #ffffff;
+    }
+    .controls,
+    .summary,
+    .table-panel {
+      padding: 16px;
+    }
+    .section-label {
+      margin: 0 0 8px;
+      color: #52605b;
+      font-size: 10px;
+      font-weight: 760;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    label {
+      display: block;
+      margin: 14px 0 6px;
+      color: #4f5c56;
+      font-size: 12px;
+      font-weight: 720;
+    }
+    select {
+      width: 100%;
+      min-height: 38px;
+      padding: 0 10px;
+      border: 1px solid #d7ddd8;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #171b1a;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 620;
+    }
+    .fixed-value {
+      min-height: 38px;
+      padding: 9px 10px;
+      border: 1px solid #d7ddd8;
+      border-radius: 4px;
+      background: #f7faf8;
+      color: #171b1a;
+      font-size: 14px;
+      font-weight: 720;
+    }
+    .split-readout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .split-readout .metric {
+      padding: 10px;
+      border: 1px solid #e1e6e2;
+      border-radius: 4px;
+      background: #fbfcfb;
+    }
+    .split-readout .metric span {
+      display: block;
+      color: #66706b;
+      font-size: 10px;
+      font-weight: 760;
+      text-transform: uppercase;
+    }
+    .split-readout .metric strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+    .note {
+      margin: 14px 0 0;
+      color: #66706b;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .chart-panel {
+      min-height: calc(100vh - 98px);
+      padding: 12px;
+    }
+    .chart-wrap {
+      position: relative;
+      height: calc(60vh);
+      min-height: 420px;
+    }
+    .quad-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .quad-card {
+      padding: 10px;
+      border: 1px solid #e1e6e2;
+      border-radius: 4px;
+      background: #fbfcfb;
+    }
+    .quad-card .quad-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+    .quad-swatch {
+      width: 11px;
+      height: 11px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .quad-title {
+      font-size: 11px;
+      font-weight: 760;
+      color: #28332f;
+      line-height: 1.25;
+    }
+    .quad-count {
+      font-size: 21px;
+      font-weight: 760;
+      line-height: 1;
+      margin: 2px 0;
+    }
+    .quad-sub {
+      color: #66706b;
+      font-size: 10.5px;
+      line-height: 1.4;
+    }
+    .quad-card.hh { border-color: #e34948; background: #fdf1f1; }
+    .quad-card.hh .quad-count { color: #b23231; }
+    .rr-box {
+      margin-top: 14px;
+      padding: 12px;
+      border-left: 3px solid #0b6b63;
+      background: #eef7f4;
+      color: #294843;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .rr-box strong { display: block; font-size: 20px; margin-bottom: 2px; color: #17332d; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th,
+    td {
+      padding: 8px 0;
+      border-bottom: 1px solid #e1e6e2;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      color: #66706b;
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    td:last-child,
+    th:last-child {
+      text-align: right;
+    }
+    .tract-name {
+      max-width: 210px;
+      color: #28332f;
+      font-weight: 650;
+    }
+    .table-panel {
+      margin-top: 14px;
+    }
+    @media (max-width: 1120px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+      .chart-panel {
+        min-height: auto;
+      }
+      .chart-wrap {
+        height: 460px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1 data-i18n="pageTitle">NY Allergy Equity — Quadrant Analysis</h1>
+      <p data-i18n="pageSubtitle">Median-split tracts into four groups to see whether race/ethnicity concentration and allergen exposure cluster together.</p>
+    </div>
+    <div class="header-actions">
+      <nav class="tab-nav">
+        <a href="index.html" class="tab-link" data-i18n="mapLink">Map</a>
+        <a href="correlation.html" class="tab-link" data-i18n="correlationLink">Correlation</a>
+        <a href="quadrant.html" class="tab-link active" data-i18n="quadrantLink">Quadrant</a>
+        <a href="history.html" class="tab-link" data-i18n="historyLink">Redlining</a>
+      </nav>
+      <button type="button" id="langToggle" class="lang-toggle">中文</button>
+    </div>
+  </header>
+
+  <main>
+    <aside class="panel controls">
+      <p class="section-label" data-i18n="variables">Equity Indicator</p>
+      <label for="xSelect" data-i18n="xAxis">Equity indicator</label>
+      <select id="xSelect"></select>
+      <label data-i18n="yAxis">Outcome</label>
+      <div class="fixed-value" data-i18n="fixedOutcome">Allergen Exposure</div>
+      <p class="note" data-i18n="note">
+        Each axis is split at its own median, so every tract falls into one of four groups: low/low, low/high, high/low, and high/high. This reveals whether the two variables cluster together, not just how strongly they trend together.
+      </p>
+      <div class="split-readout">
+        <div class="metric"><span data-i18n="medianX">Median (X)</span><strong id="medianXValue">--</strong></div>
+        <div class="metric"><span data-i18n="medianY">Median (Y)</span><strong id="medianYValue">--</strong></div>
+      </div>
+      <p class="note" id="methodNote"></p>
+    </aside>
+
+    <section class="panel chart-panel">
+      <div class="chart-wrap">
+        <canvas id="quadrantChart"></canvas>
+      </div>
+    </section>
+
+    <aside class="panel summary">
+      <p class="section-label" data-i18n="quadrantsTitle">Quadrant Breakdown</p>
+      <div class="quad-grid" id="quadGrid"></div>
+      <div class="rr-box" id="rrBox"></div>
+
+      <div class="table-panel">
+        <p class="section-label" id="tableTitle" data-i18n="highTractsTitle">Highest-Concern Tracts (High / High)</p>
+        <table>
+          <thead>
+            <tr><th data-i18n="tract">Tract</th><th id="tableMetric">Value</th></tr>
+          </thead>
+          <tbody id="topRows"></tbody>
+        </table>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    const DATA_URL = 'data/ny-allergy-equity.geojson';
+    const I18N = {
+      en: {
+        documentTitle: 'NY Allergy Equity - Quadrant Analysis',
+        pageTitle: 'NY Allergy Equity Quadrant Analysis',
+        pageSubtitle: 'Median-split tracts into four groups to see whether race/ethnicity concentration and allergen exposure cluster together.',
+        mapLink: 'Map',
+        correlationLink: 'Correlation',
+        quadrantLink: 'Quadrant',
+        historyLink: 'Redlining',
+        variables: 'Equity Indicator',
+        xAxis: 'Equity indicator',
+        yAxis: 'Outcome',
+        fixedOutcome: 'Allergen Exposure',
+        note: 'Each axis is split at its own median, so every tract falls into one of four groups: low/low, low/high, high/low, and high/high. This reveals whether the two variables cluster together, not just how strongly they trend together.',
+        medianX: 'Median (X)',
+        medianY: 'Median (Y)',
+        quadrantsTitle: 'Quadrant Breakdown',
+        tract: 'Tract',
+        highTractsTitle: 'Highest-Concern Tracts (High / High)',
+        methodNote: (xLabel) => `Split method: median. Half of all tracts fall above and half below each line — so the four quadrant sizes reflect the joint pattern between ${xLabel} and allergen exposure, not the marginal distributions.`,
+        quadLabels: {
+          ll: { en: 'Low / Low', zh: '' },
+          lh: { en: 'Low X / High Y', zh: '' },
+          hl: { en: 'High X / Low Y', zh: '' },
+          hh: { en: 'High / High', zh: '' }
+        },
+        quadDesc: {
+          ll: (xLabel) => `Low ${xLabel}, low exposure`,
+          lh: (xLabel) => `Low ${xLabel}, high exposure`,
+          hl: (xLabel) => `High ${xLabel}, low exposure`,
+          hh: (xLabel) => `High ${xLabel}, high exposure — compounding equity risk`
+        },
+        countLine: (n, pct) => `${n} tracts (${pct}%)`,
+        vsExpected: (delta) => delta >= 0
+          ? `+${delta.toFixed(0)}pp vs. 25% expected if independent`
+          : `${delta.toFixed(0)}pp vs. 25% expected if independent`,
+        avgExposure: (v) => `Avg exposure: ${v}`,
+        rrLabel: (xLabel) => `Relative risk of high exposure, high vs. low ${xLabel}`,
+        rrBody: (rr, xLabel) => rr == null
+          ? `Not enough tracts in one group to compute a relative risk.`
+          : `Tracts with above-median ${xLabel} are ${rr.toFixed(2)}× as likely to also have above-median allergen exposure as tracts with below-median ${xLabel}.`
+      },
+      zh: {
+        documentTitle: '纽约过敏公平 - 象限分析',
+        pageTitle: '纽约过敏公平象限分析',
+        pageSubtitle: '将 census tract 按中位数拆分为四组，用来观察种族/族裔集中度与过敏暴露是否聚集在一起。',
+        mapLink: '地图',
+        correlationLink: '相关性',
+        quadrantLink: '象限',
+        historyLink: 'Redlining 历史',
+        variables: '公平指标',
+        xAxis: '公平指标',
+        yAxis: '结果变量',
+        fixedOutcome: '过敏原暴露',
+        note: '每个坐标轴都在各自的中位数处拆分，因此每个 tract 都落入四组之一：低/低、低/高、高/低、高/高。这展示了两个变量是否聚集在一起，而不仅仅是它们的相关强度。',
+        medianX: '中位数 (X)',
+        medianY: '中位数 (Y)',
+        quadrantsTitle: '象限分布',
+        tract: 'Tract',
+        highTractsTitle: '风险最高的 tracts（高 / 高）',
+        methodNote: (xLabel) => `拆分方法：中位数。每条线两侧各有一半的 tract —— 因此四个象限的大小反映的是 ${xLabel} 与过敏暴露的联合分布，而不是各自的边际分布。`,
+        quadLabels: {
+          ll: { en: '', zh: '低 / 低' },
+          lh: { en: '', zh: '低 X / 高 Y' },
+          hl: { en: '', zh: '高 X / 低 Y' },
+          hh: { en: '', zh: '高 / 高' }
+        },
+        quadDesc: {
+          ll: (xLabel) => `${xLabel}低，暴露低`,
+          lh: (xLabel) => `${xLabel}低，暴露高`,
+          hl: (xLabel) => `${xLabel}高，暴露低`,
+          hh: (xLabel) => `${xLabel}高，暴露高 —— 公平风险叠加`
+        },
+        countLine: (n, pct) => `${n} 个 tracts（${pct}%）`,
+        vsExpected: (delta) => delta >= 0
+          ? `比独立假设下的 25% 高 ${delta.toFixed(0)} 个百分点`
+          : `比独立假设下的 25% 低 ${Math.abs(delta).toFixed(0)} 个百分点`,
+        avgExposure: (v) => `平均暴露: ${v}`,
+        rrLabel: (xLabel) => `高暴露的相对风险（${xLabel}高 vs 低）`,
+        rrBody: (rr, xLabel) => rr == null
+          ? `其中一组的 tract 数量太少，无法计算相对风险。`
+          : `${xLabel}高于中位数的 tract，其暴露也高于中位数的可能性是${xLabel}低于中位数 tract 的 ${rr.toFixed(2)} 倍。`
+      }
+    };
+
+    const queryParams = new URLSearchParams(window.location.search);
+    let currentLang = queryParams.get('lang') || localStorage.getItem('allergyEquityLang') || 'en';
+    if (!I18N[currentLang]) currentLang = 'en';
+
+    function t(key) {
+      return I18N[currentLang][key] || I18N.en[key] || key;
+    }
+
+    function labelText(value) {
+      return typeof value === 'object' ? (value[currentLang] || value.en) : value;
+    }
+
+    const VARIABLES = {
+      exposure: {
+        label: { en: 'Allergen Exposure', zh: '过敏原暴露' },
+        field: 'exposure',
+        format: v => `${(v * 100).toFixed(1)}%`,
+        min: 0,
+        max: 0.35
+      },
+      poverty_rate: {
+        label: { en: 'Poverty Rate', zh: '贫困率' },
+        field: 'poverty_rate',
+        format: v => `${(v * 100).toFixed(1)}%`,
+        min: 0,
+        max: 0.6
+      },
+      income: {
+        label: { en: 'Median Income', zh: '收入中位数' },
+        field: 'income',
+        format: v => `$${Math.round(v).toLocaleString()}`,
+        min: 0,
+        max: 250000
+      },
+      median_home_value: {
+        label: { en: 'Median Home Value', zh: '房屋价值中位数' },
+        field: 'median_home_value',
+        format: v => `$${Math.round(v).toLocaleString()}`,
+        min: 0,
+        max: 1200000
+      },
+      people_of_color_pct: {
+        label: { en: 'People of Color Share', zh: '有色人种比例' },
+        field: 'people_of_color_pct',
+        format: v => `${(v * 100).toFixed(1)}%`,
+        min: 0,
+        max: 1
+      },
+      renter_pct: {
+        label: { en: 'Renter Share', zh: '租户比例' },
+        field: 'renter_pct',
+        format: v => `${(v * 100).toFixed(1)}%`,
+        min: 0,
+        max: 1
+      },
+      under18_pct: {
+        label: { en: 'Children Under 18', zh: '18 岁以下儿童' },
+        field: 'under18_pct',
+        format: v => `${(v * 100).toFixed(1)}%`,
+        min: 0,
+        max: 0.45
+      },
+      over65_pct: {
+        label: { en: 'Older Adults 65+', zh: '65 岁及以上老年人' },
+        field: 'over65_pct',
+        format: v => `${(v * 100).toFixed(1)}%`,
+        min: 0,
+        max: 0.45
+      }
+    };
+    const CORE_INDICATORS = ['people_of_color_pct', 'median_home_value', 'poverty_rate', 'income', 'renter_pct', 'under18_pct', 'over65_pct'];
+    const OUTCOME_KEY = 'exposure';
+
+    // Quadrant palette — validated against the site's light surface with
+    // node scripts/validate_palette.js from the dataviz skill (--pairs all,
+    // light mode): CVD separation lands in the floor band (worst pair ΔE 7.2),
+    // which is legal only with secondary encoding — hence distinct point
+    // shapes + always-visible legend/labels/table below, not color alone.
+    const QUADRANTS = {
+      ll: { color: '#008300', shape: 'circle' },
+      lh: { color: '#eda100', shape: 'triangle' },
+      hl: { color: '#2a78d6', shape: 'rect' },
+      hh: { color: '#e34948', shape: 'star' }
+    };
+
+    let rows = [];
+    let chart = null;
+
+    function valueOf(row, key) {
+      const value = row[VARIABLES[key].field];
+      return Number.isFinite(value) && value >= 0 ? value : null;
+    }
+
+    function median(values) {
+      const sorted = [...values].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    }
+
+    function buildPoints(xKey, yKey) {
+      return rows.map(row => {
+        const x = valueOf(row, xKey);
+        const y = valueOf(row, yKey);
+        if (x == null || y == null) return null;
+        return {
+          x,
+          y,
+          geoid: row.GEOID,
+          name: row.name || row.NAME || `Tract ${row.TRACT}`,
+          raw: row
+        };
+      }).filter(Boolean);
+    }
+
+    function classify(points, medianX, medianY) {
+      const groups = { ll: [], lh: [], hl: [], hh: [] };
+      points.forEach(p => {
+        const key = (p.x > medianX ? 'h' : 'l') + (p.y > medianY ? 'h' : 'l');
+        groups[key].push(p);
+      });
+      return groups;
+    }
+
+    function updateQuadGrid(groups, total, xKey) {
+      const xDef = VARIABLES[xKey];
+      const yDef = VARIABLES[OUTCOME_KEY];
+      const xLabel = labelText(xDef.label);
+      // spatial layout: top row = high Y, bottom row = low Y; left = low X, right = high X
+      const order = ['lh', 'hh', 'll', 'hl'];
+      const grid = document.getElementById('quadGrid');
+      grid.innerHTML = order.map(key => {
+        const g = groups[key];
+        const n = g.length;
+        const pct = total ? (n / total * 100) : 0;
+        const delta = pct - 25;
+        const avgExp = n ? g.reduce((s, p) => s + p.y, 0) / n : null;
+        const swatch = QUADRANTS[key].color;
+        return `
+          <div class="quad-card ${key === 'hh' ? 'hh' : ''}">
+            <div class="quad-head">
+              <span class="quad-swatch" style="background:${swatch}"></span>
+              <span class="quad-title">${t('quadDesc')[key](xLabel)}</span>
+            </div>
+            <div class="quad-count">${n}</div>
+            <div class="quad-sub">${t('countLine')(n, pct.toFixed(0))}</div>
+            <div class="quad-sub">${t('vsExpected')(delta)}</div>
+            <div class="quad-sub">${avgExp == null ? '' : t('avgExposure')(yDef.format(avgExp))}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateRR(groups, xKey) {
+      const xLabel = labelText(VARIABLES[xKey].label);
+      const lowTotal = groups.ll.length + groups.lh.length;
+      const highTotal = groups.hl.length + groups.hh.length;
+      let rr = null;
+      if (lowTotal > 0 && highTotal > 0) {
+        const pLow = groups.lh.length / lowTotal;
+        const pHigh = groups.hh.length / highTotal;
+        rr = pLow > 0 ? pHigh / pLow : null;
+      }
+      document.getElementById('rrBox').innerHTML = `
+        <strong>${rr == null ? '--' : rr.toFixed(2) + '×'}</strong>
+        ${t('rrLabel')(xLabel)}<br>${t('rrBody')(rr, xLabel)}
+      `;
+    }
+
+    function updateTable(groups, xKey) {
+      const xDef = VARIABLES[xKey];
+      const yDef = VARIABLES[OUTCOME_KEY];
+      document.getElementById('tableMetric').textContent = labelText(yDef.label);
+      document.getElementById('topRows').innerHTML = [...groups.hh]
+        .sort((a, b) => b.y - a.y)
+        .slice(0, 12)
+        .map(point => `
+          <tr>
+            <td class="tract-name">${point.name}</td>
+            <td>${yDef.format(point.y)}<br><span style="color:#66706b;font-size:10px;">${labelText(xDef.label)}: ${xDef.format(point.x)}</span></td>
+          </tr>
+        `).join('');
+    }
+
+    function updateChart() {
+      const xKey = document.getElementById('xSelect').value;
+      const yKey = OUTCOME_KEY;
+      const xDef = VARIABLES[xKey];
+      const yDef = VARIABLES[yKey];
+      const points = buildPoints(xKey, yKey);
+      const medianX = median(points.map(p => p.x));
+      const medianY = median(points.map(p => p.y));
+      const groups = classify(points, medianX, medianY);
+
+      document.getElementById('medianXValue').textContent = xDef.format(medianX);
+      document.getElementById('medianYValue').textContent = yDef.format(medianY);
+      document.getElementById('methodNote').textContent = t('methodNote')(labelText(xDef.label));
+
+      const quadDatasets = ['ll', 'lh', 'hl', 'hh'].map(key => ({
+        label: labelText(t('quadLabels')[key]) || key,
+        data: groups[key],
+        pointRadius: key === 'hh' ? 4 : 3,
+        pointHoverRadius: 7,
+        pointStyle: QUADRANTS[key].shape,
+        backgroundColor: QUADRANTS[key].color,
+        borderColor: QUADRANTS[key].color,
+        borderWidth: 0
+      }));
+
+      chart.data.datasets = [
+        ...quadDatasets,
+        {
+          type: 'line',
+          label: 'median-x',
+          data: [{ x: medianX, y: yDef.min }, { x: medianX, y: yDef.max }],
+          borderColor: '#898781',
+          borderWidth: 1.5,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          order: 10
+        },
+        {
+          type: 'line',
+          label: 'median-y',
+          data: [{ x: xDef.min, y: medianY }, { x: xDef.max, y: medianY }],
+          borderColor: '#898781',
+          borderWidth: 1.5,
+          borderDash: [5, 5],
+          pointRadius: 0,
+          order: 10
+        }
+      ];
+      chart.options.scales.x.title.text = labelText(xDef.label);
+      chart.options.scales.y.title.text = labelText(yDef.label);
+      chart.options.scales.x.min = xDef.min;
+      chart.options.scales.x.max = xDef.max;
+      chart.options.scales.y.min = yDef.min;
+      chart.options.scales.y.max = yDef.max;
+      chart.options.scales.x.ticks.callback = value => xDef.format(Number(value));
+      chart.options.scales.y.ticks.callback = value => yDef.format(Number(value));
+      chart.update('none');
+
+      updateQuadGrid(groups, points.length, xKey);
+      updateRR(groups, xKey);
+      updateTable(groups, xKey);
+    }
+
+    function refreshSelectLabels() {
+      const selections = { xSelect: document.getElementById('xSelect').value || 'people_of_color_pct' };
+      const options = CORE_INDICATORS.map(key => [key, VARIABLES[key]])
+        .map(([key, def]) => `<option value="${key}">${labelText(def.label)}</option>`)
+        .join('');
+      document.getElementById('xSelect').innerHTML = options;
+      document.getElementById('xSelect').value = CORE_INDICATORS.includes(selections.xSelect)
+        ? selections.xSelect
+        : 'people_of_color_pct';
+    }
+
+    function populateControls() {
+      refreshSelectLabels();
+      const requestedIndicator = queryParams.get('indicator');
+      document.getElementById('xSelect').value = CORE_INDICATORS.includes(requestedIndicator)
+        ? requestedIndicator
+        : 'people_of_color_pct';
+      document.getElementById('xSelect').addEventListener('change', updateChart);
+    }
+
+    function applyLanguage() {
+      document.documentElement.lang = currentLang === 'zh' ? 'zh-CN' : 'en';
+      document.title = t('documentTitle');
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        el.textContent = t(el.dataset.i18n);
+      });
+      document.getElementById('langToggle').textContent = currentLang === 'en' ? '中文' : 'English';
+      refreshSelectLabels();
+      if (chart) updateChart();
+    }
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      localStorage.setItem('allergyEquityLang', lang);
+      applyLanguage();
+    }
+
+    async function init() {
+      const response = await fetch(DATA_URL);
+      if (!response.ok) throw new Error(`Could not load ${DATA_URL}`);
+      const geojson = await response.json();
+      rows = geojson.features.map(feature => feature.properties);
+      populateControls();
+      const ctx = document.getElementById('quadrantChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'scatter',
+        data: { datasets: [] },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: {
+                filter: item => item.text !== 'median-x' && item.text !== 'median-y',
+                usePointStyle: true,
+                boxWidth: 8,
+                font: { size: 11 }
+              }
+            },
+            tooltip: {
+              filter: item => item.dataset.label !== 'median-x' && item.dataset.label !== 'median-y',
+              callbacks: {
+                title: items => items[0]?.raw?.name || '',
+                label: context => {
+                  const point = context.raw;
+                  const xKey = document.getElementById('xSelect').value;
+                  return [
+                    `${labelText(VARIABLES[OUTCOME_KEY].label)}: ${VARIABLES[OUTCOME_KEY].format(point.y)}`,
+                    `${labelText(VARIABLES[xKey].label)}: ${VARIABLES[xKey].format(point.x)}`
+                  ];
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: '', color: '#52605b', font: { size: 12, weight: 700 } },
+              grid: { color: '#e7ebe8' },
+              ticks: { color: '#66706b', maxTicksLimit: 8 }
+            },
+            y: {
+              title: { display: true, text: '', color: '#52605b', font: { size: 12, weight: 700 } },
+              grid: { color: '#e7ebe8' },
+              ticks: { color: '#66706b', maxTicksLimit: 8 }
+            }
+          }
+        }
+      });
+      updateChart();
+    }
+
+    document.getElementById('langToggle').addEventListener('click', () => {
+      setLanguage(currentLang === 'en' ? 'zh' : 'en');
+    });
+    applyLanguage();
+
+    init().catch(error => {
+      document.getElementById('rrBox').textContent = error.message;
+    });
+  </script>
+</body>
+</html>

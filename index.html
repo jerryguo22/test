@@ -10,7 +10,27 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body, html { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-    #map { width: 100%; height: 100vh; }
+    body { display: flex; flex-direction: column; }
+    .site-header {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      height: 52px;
+      padding: 0 16px;
+      border-bottom: 1px solid #d7ddd8;
+      background: #fff;
+      z-index: 2;
+    }
+    .site-header h1 { font-size: 16px; font-weight: 700; color: #171b1a; }
+    .site-header .header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .site-header .tab-nav { display: flex; gap: 4px; }
+    .site-header .tab-link { padding: 7px 12px; border-radius: 4px; color: #52605b; font-size: 13px; font-weight: 760; text-decoration: none; }
+    .site-header .tab-link:hover { background: #f5f6f3; color: #171b1a; }
+    .site-header .tab-link.active { background: #eef7f4; color: #0b6b63; }
+    #map-stage { position: relative; flex: 1 1 auto; min-height: 0; }
+    #map { width: 100%; height: 100%; }
 
     /* ── shared panel style ── */
     .panel {
@@ -144,6 +164,20 @@
   </style>
 </head>
 <body>
+<header class="site-header">
+  <h1 data-i18n="mapTitle">NY Allergy Equity</h1>
+  <div class="header-actions">
+    <nav class="tab-nav">
+      <a href="index.html" class="tab-link active" data-i18n="mapLink">Map</a>
+      <a href="correlation.html" class="tab-link" data-i18n="correlationLink">Correlation</a>
+      <a href="quadrant.html" class="tab-link" data-i18n="quadrantLink">Quadrant</a>
+      <a href="history.html" class="tab-link" data-i18n="historyLink">Redlining</a>
+    </nav>
+    <button type="button" id="langToggle" class="lang-toggle">中文</button>
+  </div>
+</header>
+
+<div id="map-stage">
 <div id="map"></div>
 <div id="loading"><div class="spinner"></div><span data-i18n="loading">Loading data...</span></div>
 
@@ -171,7 +205,6 @@
 <div id="controls" class="panel">
   <div class="control-header">
     <h3 data-i18n="layers">Layers</h3>
-    <button type="button" id="langToggle" class="lang-toggle">中文</button>
   </div>
 
   <div class="ctrl-group">
@@ -214,9 +247,7 @@
 
   <div class="note">
     <span data-i18n="controlsNote1">5,411 census tracts · ACS 5-year 2023 · Open-Meteo 7-day exposure samples.</span><br>
-    <span data-i18n="controlsNote2">Dataset is downloaded into</span> <code>data/</code> <span data-i18n="controlsNote3">for GitHub Pages.</span><br>
-    <a href="correlation.html" style="color:#666;text-decoration:underline;" data-i18n="openCorrelation">Open correlation analysis</a><br>
-    <a href="history.html" style="color:#666;text-decoration:underline;" data-i18n="openHistory">Open historical redlining analysis</a>
+    <span data-i18n="controlsNote2">Dataset is downloaded into</span> <code>data/</code> <span data-i18n="controlsNote3">for GitHub Pages.</span>
   </div>
 </div>
 
@@ -237,6 +268,7 @@
     <span class="sil-swatch" style="background:#ccc"></span><span data-i18n="noData">No data</span>
   </div>
 </div>
+</div><!-- /#map-stage -->
 
 <script>
 // ════════════════════════════════════════════════
@@ -271,8 +303,10 @@ const I18N = {
     controlsNote1: '5,411 census tracts · ACS 5-year 2023 · Open-Meteo 7-day exposure samples.',
     controlsNote2: 'Dataset is downloaded into',
     controlsNote3: 'for GitHub Pages.',
-    openCorrelation: 'Open correlation analysis',
-    openHistory: 'Open historical redlining analysis',
+    mapLink: 'Map',
+    correlationLink: 'Correlation',
+    quadrantLink: 'Quadrant',
+    historyLink: 'Redlining',
     incomeLegend: 'Income:',
     noData: 'No data',
     lower: 'Lower',
@@ -333,8 +367,10 @@ const I18N = {
     controlsNote1: '5,411 个 census tracts · ACS 2023 五年数据 · Open-Meteo 7 天暴露采样。',
     controlsNote2: '数据已下载到',
     controlsNote3: '可用于 GitHub Pages。',
-    openCorrelation: '打开相关性分析',
-    openHistory: '打开历史 redlining 分析',
+    mapLink: '地图',
+    correlationLink: '相关性',
+    quadrantLink: '象限',
+    historyLink: 'Redlining 历史',
     incomeLegend: '收入:',
     noData: '无数据',
     lower: '较低',

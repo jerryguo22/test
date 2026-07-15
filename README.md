@@ -19,6 +19,7 @@ The current prototype treats this as an environmental exposure and vulnerability
 - Raw Open-Meteo exposure sample points shown directly on the map as a dense 0.25-degree grid clipped to New York State tracts.
 - Clickable tract details with IDW-estimated pollen, PM2.5, AQI, ozone, income, poverty, renter share, age-sensitive population, and people-of-color share.
 - A separate `correlation.html` page for interactive correlation analysis across tract variables.
+- A separate `quadrant.html` page for median-split quadrant analysis (e.g. low/high race-ethnicity share × low/high allergen exposure), with quadrant counts, a relative-risk statistic, and a table of the highest-concern tracts.
 
 ## Downloaded Data
 

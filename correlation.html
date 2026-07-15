@@ -45,6 +45,26 @@
       gap: 10px;
       flex-shrink: 0;
     }
+    .tab-nav {
+      display: flex;
+      gap: 4px;
+    }
+    .tab-link {
+      padding: 7px 12px;
+      border-radius: 4px;
+      color: #52605b;
+      font-size: 13px;
+      font-weight: 760;
+      text-decoration: none;
+    }
+    .tab-link:hover {
+      background: #f5f6f3;
+      color: #171b1a;
+    }
+    .tab-link.active {
+      background: #eef7f4;
+      color: #0b6b63;
+    }
     .lang-toggle {
       min-height: 32px;
       padding: 0 12px;
@@ -234,8 +254,12 @@
       <p data-i18n="pageSubtitle">A focused view of allergen exposure against race/ethnicity, poverty, income, home value, housing tenure, children, and older adults.</p>
     </div>
     <div class="header-actions">
-      <a href="index.html" data-i18n="backToMap">Back to map</a>
-      <a href="history.html" data-i18n="historyLink">History</a>
+      <nav class="tab-nav">
+        <a href="index.html" class="tab-link" data-i18n="mapLink">Map</a>
+        <a href="correlation.html" class="tab-link active" data-i18n="correlationLink">Correlation</a>
+        <a href="quadrant.html" class="tab-link" data-i18n="quadrantLink">Quadrant</a>
+        <a href="history.html" class="tab-link" data-i18n="historyLink">Redlining</a>
+      </nav>
       <button type="button" id="langToggle" class="lang-toggle">中文</button>
     </div>
   </header>
@@ -287,8 +311,10 @@
         documentTitle: 'NY Allergy Equity - Correlation Analysis',
         pageTitle: 'NY Allergy Equity Core Correlations',
         pageSubtitle: 'A focused view of allergen exposure against race/ethnicity, poverty, income, home value, housing tenure, children, and older adults.',
-        backToMap: 'Back to map',
-        historyLink: 'History',
+        mapLink: 'Map',
+        correlationLink: 'Correlation',
+        quadrantLink: 'Quadrant',
+        historyLink: 'Redlining',
         variables: 'Core Indicators',
         xAxis: 'Equity indicator',
         yAxis: 'Outcome',
@@ -313,8 +339,10 @@
         documentTitle: '纽约过敏公平 - 相关性分析',
         pageTitle: '纽约过敏公平核心相关性',
         pageSubtitle: '聚焦过敏暴露与种族/族裔、贫困、收入、房屋价值、租户比例、儿童人口、老年人口之间的关系。',
-        backToMap: '返回地图',
-        historyLink: '历史',
+        mapLink: '地图',
+        correlationLink: '相关性',
+        quadrantLink: '象限',
+        historyLink: 'Redlining 历史',
         variables: '核心指标',
         xAxis: '公平指标',
         yAxis: '结果变量',

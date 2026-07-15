@@ -25,6 +25,10 @@
     header p { margin: 3px 0 0; color: #64706a; font-size: 12px; }
     .header-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
     a { color: #0b6b63; font-size: 13px; font-weight: 760; text-decoration: none; }
+    .tab-nav { display: flex; gap: 4px; }
+    .tab-link { padding: 7px 12px; border-radius: 4px; color: #52605b; font-size: 13px; font-weight: 760; text-decoration: none; }
+    .tab-link:hover { background: #f5f6f3; color: #17211d; }
+    .tab-link.active { background: #eef7f4; color: #0b6b63; }
     button {
       min-height: 32px;
       padding: 0 12px;
@@ -178,8 +182,12 @@
       <p data-i18n="subtitle">Redlining, race, housing, and allergen exposure in New York State.</p>
     </div>
     <div class="header-actions">
-      <a href="index.html" data-i18n="mapLink">Map</a>
-      <a href="correlation.html" data-i18n="correlationLink">Correlation</a>
+      <nav class="tab-nav">
+        <a href="index.html" class="tab-link" data-i18n="mapLink">Map</a>
+        <a href="correlation.html" class="tab-link" data-i18n="correlationLink">Correlation</a>
+        <a href="quadrant.html" class="tab-link" data-i18n="quadrantLink">Quadrant</a>
+        <a href="history.html" class="tab-link active" data-i18n="historyLink">Redlining</a>
+      </nav>
       <button type="button" id="langToggle">中文</button>
     </div>
   </header>
@@ -254,6 +262,8 @@
         subtitle: 'Redlining, race, housing, and allergen exposure in New York State.',
         mapLink: 'Map',
         correlationLink: 'Correlation',
+        quadrantLink: 'Quadrant',
+        historyLink: 'Redlining',
         frameLabel: 'Research Frame',
         claim: 'Allergy exposure looks natural, but its geography may carry the afterlife of racial segregation, housing inequality, and uneven environmental investment.',
         gradeLabel: 'HOLC Grade Summary',
@@ -289,6 +299,8 @@
         subtitle: '纽约州的 redlining、种族、住房与过敏暴露。',
         mapLink: '地图',
         correlationLink: '相关性',
+        quadrantLink: '象限',
+        historyLink: 'Redlining 历史',
         frameLabel: '研究框架',
         claim: '过敏暴露看似是自然问题，但它的空间分布可能承载了种族隔离、住房不平等和环境投资不均的历史遗留。',
         gradeLabel: 'HOLC 等级摘要',
