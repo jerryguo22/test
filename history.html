@@ -645,9 +645,10 @@
         id: 'tract-outline',
         type: 'line',
         source: 'tracts',
+        filter: ['==', ['get', 'in_region'], true],
         paint: {
           'line-color': '#2c3631',
-          'line-opacity': ['case', ['==', ['get', 'in_region'], true], 0.15, 0.05],
+          'line-opacity': 0.15,
           'line-width': 0.25
         }
       });
