@@ -246,7 +246,7 @@
   </div>
 
   <div class="note">
-    <span data-i18n="controlsNote1">5,411 census tracts · ACS 5-year 2023 · Open-Meteo 7-day exposure samples.</span><br>
+    <span data-i18n="controlsNote1">2,568 census tracts across NYC and Westchester County · ACS 5-year 2023 · Open-Meteo 7-day exposure samples. Rest of the state shown for context, shaded out.</span><br>
     <span data-i18n="controlsNote2">Dataset is downloaded into</span> <code>data/</code> <span data-i18n="controlsNote3">for GitHub Pages.</span>
   </div>
 </div>
@@ -300,7 +300,7 @@ const I18N = {
     medianIncome: 'Median Income',
     povertyRate: 'Poverty Rate',
     peopleOfColor: 'People of Color',
-    controlsNote1: '5,411 census tracts · ACS 5-year 2023 · Open-Meteo 7-day exposure samples.',
+    controlsNote1: '2,568 census tracts across NYC and Westchester County · ACS 5-year 2023 · Open-Meteo 7-day exposure samples. Rest of the state shown for context, shaded out.',
     controlsNote2: 'Dataset is downloaded into',
     controlsNote3: 'for GitHub Pages.',
     mapLink: 'Map',
@@ -364,7 +364,7 @@ const I18N = {
     medianIncome: '收入中位数',
     povertyRate: '贫困率',
     peopleOfColor: '有色人种比例',
-    controlsNote1: '5,411 个 census tracts · ACS 2023 五年数据 · Open-Meteo 7 天暴露采样。',
+    controlsNote1: '纽约市和 Westchester County 共 2,568 个 census tracts · ACS 2023 五年数据 · Open-Meteo 7 天暴露采样。州内其余区域仅作背景显示，已淡化。',
     controlsNote2: '数据已下载到',
     controlsNote3: '可用于 GitHub Pages。',
     mapLink: '地图',
@@ -445,6 +445,53 @@ function setLanguage(lang) {
 // ── constants ──────────────────────────────────
 const HARRISON   = { lat: 40.9676, lng: -73.7124 };
 const STATE      = '36';  // New York
+
+// Study area: NYC's five boroughs + Westchester County.
+// GEOID = state(2) + county(3) + tract(6); first 5 digits identify the county.
+const TARGET_COUNTY_FIPS = ['36005', '36047', '36061', '36081', '36085', '36119'];
+function inStudyArea(geoid) {
+  return TARGET_COUNTY_FIPS.includes(String(geoid).slice(0, 5));
+}
+
+// Tag every tract with in_region, then fold the region's own tract count and
+// averages into the (statewide) precomputed summary so the info panel reflects
+// the study area rather than all of New York State.
+function scopeToStudyArea(tractGeo, summary) {
+  const inRegion = [];
+  tractGeo.features.forEach(f => {
+    const region = inStudyArea(f.properties.GEOID);
+    f.properties.in_region = region;
+    if (region) inRegion.push(f.properties);
+  });
+  const avg = field => {
+    const values = inRegion.map(p => p[field]).filter(v => Number.isFinite(v) && v >= 0);
+    return values.length ? values.reduce((s, v) => s + v, 0) / values.length : null;
+  };
+  summary.tract_count = inRegion.length;
+  summary.averages = {
+    ...summary.averages,
+    exposure: avg('exposure'),
+    vulnerability: avg('vulnerability'),
+    equity_risk: avg('equity_risk')
+  };
+  return inRegion;
+}
+
+function studyAreaBounds(inRegionProps, tractGeo) {
+  const geoidSet = new Set(inRegionProps.map(p => String(p.GEOID)));
+  let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+  tractGeo.features.forEach(f => {
+    if (!geoidSet.has(String(f.properties.GEOID))) return;
+    const rings = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+    rings.forEach(poly => poly.forEach(ring => ring.forEach(([lng, lat]) => {
+      if (lng < minLng) minLng = lng;
+      if (lng > maxLng) maxLng = lng;
+      if (lat < minLat) minLat = lat;
+      if (lat > maxLat) maxLat = lat;
+    })));
+  });
+  return [[minLng, minLat], [maxLng, maxLat]];
+}
 
 // allergen sampling points — major NY cities / metro areas
 const NY_CITIES = [
@@ -663,8 +710,8 @@ function scatterAxesForLayer(layerKey) {
 const map = new maplibregl.Map({
   container: 'map',
   style: 'https://tiles.openfreemap.org/styles/bright',
-  center: [-75.4, 42.9],  // New York State center
-  zoom: 7
+  center: [-73.85, 40.85],  // NYC + Westchester County, refined by fitBounds on load
+  zoom: 9.3
 });
 map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
@@ -685,6 +732,7 @@ function buildScatterChart(tractGeo) {
   scatterPoints = [];
   tractGeo.features.forEach(f => {
     const p = f.properties;
+    if (!p.in_region) return;
     if (p.vulnerability < 0 || p.exposure == null) return;
     scatterPoints.push({
       geoid: String(p.GEOID),
@@ -800,16 +848,24 @@ function updateScatterChart(layerKey) {
 function addTractLayers(geo) {
   map.addSource('tracts', { type: 'geojson', data: geo });
 
-  // fill — choropleth; color set by updateSESLayer()
+  // fill — choropleth; color set by updateSESLayer(). Tracts outside the
+  // study area (in_region === false) are shaded out via fill-opacity so the
+  // rest of the state stays visible as context without competing for attention.
   map.addLayer({
     id: 'tracts-fill', type: 'fill', source: 'tracts',
-    paint: { 'fill-opacity': 0.65 }
+    paint: {
+      'fill-opacity': ['case', ['==', ['get', 'in_region'], true], 0.65, 0.08]
+    }
   }); // sits above Google Pollen raster tiles
 
   // outline
   map.addLayer({
     id: 'tracts-outline', type: 'line', source: 'tracts',
-    paint: { 'line-color': '#444', 'line-width': 0.3, 'line-opacity': 0.5 }
+    paint: {
+      'line-color': '#444',
+      'line-width': 0.3,
+      'line-opacity': ['case', ['==', ['get', 'in_region'], true], 0.5, 0.12]
+    }
   });
 
   // highlight on hover
@@ -889,7 +945,10 @@ function setSamplePointsVisible(visible) {
 
 function updateSESLayer(key) {
   map.setPaintProperty('tracts-fill', 'fill-color',
-    key === 'none' ? 'rgba(0,0,0,0)' : SES[key].paint
+    key === 'none' ? 'rgba(0,0,0,0)' : ['case',
+      ['==', ['get', 'in_region'], true], SES[key].paint,
+      '#cfcfcf'
+    ]
   );
 }
 
@@ -1037,6 +1096,10 @@ function setupControls() {
   let hoveredId = null;
   map.on('mousemove', 'tracts-fill', e => {
     if (!e.features.length) return;
+    if (!e.features[0].properties.in_region) {
+      map.getCanvas().style.cursor = '';
+      return;
+    }
     map.getCanvas().style.cursor = 'pointer';
     const geoid = String(e.features[0].properties.GEOID);
     if (geoid !== hoveredId) {
@@ -1065,6 +1128,7 @@ function setupControls() {
   // click
   map.on('click', 'tracts-fill', e => {
     if (!e.features.length) return;
+    if (!e.features[0].properties.in_region) return;
     renderTractInfo(e.features[0].properties);
   });
 }
@@ -1085,12 +1149,21 @@ map.on('load', async () => {
     ]);
 
     tractGeoJSON = tractGeo;
+    const inRegionProps = scopeToStudyArea(tractGeoJSON, summary);
+    const [[minLng, minLat], [maxLng, maxLat]] = studyAreaBounds(inRegionProps, tractGeoJSON);
+    const pad = 0.05;
+    sampleGeo.features = sampleGeo.features.filter(f => {
+      const [lng, lat] = f.geometry.coordinates;
+      return lng >= minLng - pad && lng <= maxLng + pad && lat >= minLat - pad && lat <= maxLat + pad;
+    });
+
     renderInfoPanel(summary);
     addTractLayers(tractGeoJSON);
     addExposureSampleLayers(sampleGeo);
     updateSESLayer(activeSES);
     setupControls();
     buildScatterChart(tractGeoJSON);
+    map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 40, duration: 0 });
 
     // Harrison marker
     new maplibregl.Marker({ color: '#e63946' })

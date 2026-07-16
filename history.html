@@ -259,7 +259,7 @@
     const I18N = {
       en: {
         title: 'Allergy as Historical Environmental Inequality',
-        subtitle: 'Redlining, race, housing, and allergen exposure in New York State.',
+        subtitle: 'Redlining, race, housing, and allergen exposure in New York City and Westchester County.',
         mapLink: 'Map',
         correlationLink: 'Correlation',
         quadrantLink: 'Quadrant',
@@ -296,7 +296,7 @@
       },
       zh: {
         title: '过敏作为历史环境不平等',
-        subtitle: '纽约州的 redlining、种族、住房与过敏暴露。',
+        subtitle: '纽约市和 Westchester County 的 redlining、种族、住房与过敏暴露。',
         mapLink: '地图',
         correlationLink: '相关性',
         quadrantLink: '象限',
@@ -333,11 +333,61 @@
       }
     };
 
+    // Study area: NYC's five boroughs + Westchester County. GEOID = state(2)
+    // + county(3) + tract(6); first 5 digits identify the county. HOLC surveyed
+    // Lower Westchester as its own city area, distinct from the NYC boroughs.
+    const TARGET_COUNTY_FIPS = ['36005', '36047', '36061', '36081', '36085', '36119'];
+    const TARGET_HOLC_CITIES = ['Bronx', 'Brooklyn', 'Manhattan', 'Queens', 'Staten Island', 'Lower Westchester Co.'];
+    function inStudyArea(geoid) {
+      return TARGET_COUNTY_FIPS.includes(String(geoid).slice(0, 5));
+    }
+
+    function computeGradeSummary(features) {
+      const grades = { A: [], B: [], C: [], D: [], None: [] };
+      features.forEach(f => {
+        const p = f.properties;
+        const g = ['A', 'B', 'C', 'D'].includes(p.holc_grade) ? p.holc_grade : 'None';
+        grades[g].push(p);
+      });
+      const avg = (arr, field) => {
+        const values = arr.map(p => Number(p[field])).filter(v => Number.isFinite(v) && v >= 0);
+        return values.length ? values.reduce((s, v) => s + v, 0) / values.length : null;
+      };
+      const summary = {};
+      Object.keys(grades).forEach(g => {
+        const arr = grades[g];
+        summary[g] = {
+          tract_count: arr.length,
+          avg_exposure: avg(arr, 'exposure'),
+          avg_people_of_color_pct: avg(arr, 'people_of_color_pct'),
+          avg_poverty_rate: avg(arr, 'poverty_rate'),
+          avg_median_home_value: avg(arr, 'median_home_value'),
+          avg_renter_pct: avg(arr, 'renter_pct')
+        };
+      });
+      return summary;
+    }
+
+    function studyAreaBounds(features) {
+      let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+      features.forEach(f => {
+        const rings = f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates;
+        rings.forEach(poly => poly.forEach(ring => ring.forEach(([lng, lat]) => {
+          if (lng < minLng) minLng = lng;
+          if (lng > maxLng) maxLng = lng;
+          if (lat < minLat) minLat = lat;
+          if (lat > maxLat) maxLat = lat;
+        })));
+      });
+      return [minLng, minLat, maxLng, maxLat];
+    }
+
     const queryParams = new URLSearchParams(window.location.search);
     let currentLang = queryParams.get('lang') || localStorage.getItem('allergyEquityLang') || 'en';
     if (!I18N[currentLang]) currentLang = 'en';
     let summaryData = null;
     let gradeChart = null;
+    let studyBounds = null; // [minLng, minLat, maxLng, maxLat]
 
     function t(key) {
       return I18N[currentLang][key] || I18N.en[key] || key;
@@ -439,7 +489,7 @@
       return '#006d2c';
     }
 
-    function drawFallbackMap(tractGeo, holcGeo) {
+    function drawFallbackMap(tractGeo, holcGeo, studyBbox) {
       const canvas = document.getElementById('fallbackMap');
       const rect = canvas.getBoundingClientRect();
       const dpr = window.devicePixelRatio || 1;
@@ -451,7 +501,10 @@
       ctx.fillStyle = '#eef2ee';
       ctx.fillRect(0, 0, rect.width, rect.height);
 
-      const bbox = [-79.9, 40.3, -71.7, 45.1];
+      const margin = 0.06;
+      const bbox = studyBbox
+        ? [studyBbox[0] - margin, studyBbox[1] - margin, studyBbox[2] + margin, studyBbox[3] + margin]
+        : [-74.35, 40.45, -73.4, 41.35]; // NYC + Westchester fallback
       const pad = 22;
       const scale = Math.min((rect.width - pad * 2) / (bbox[2] - bbox[0]), (rect.height - pad * 2) / (bbox[3] - bbox[1]));
       const xOffset = (rect.width - (bbox[2] - bbox[0]) * scale) / 2;
@@ -465,7 +518,8 @@
       ctx.lineWidth = 1;
       ctx.font = '10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       ctx.fillStyle = '#6b7772';
-      for (let lng = -79; lng <= -72; lng += 1) {
+      const gridStep = 0.25;
+      for (let lng = Math.ceil(bbox[0] / gridStep) * gridStep; lng <= bbox[2]; lng += gridStep) {
         const [x1, y1] = project([lng, bbox[1]]);
         const [x2, y2] = project([lng, bbox[3]]);
         ctx.beginPath();
@@ -473,7 +527,7 @@
         ctx.lineTo(x2, y2);
         ctx.stroke();
       }
-      for (let lat = 41; lat <= 45; lat += 1) {
+      for (let lat = Math.ceil(bbox[1] / gridStep) * gridStep; lat <= bbox[3]; lat += gridStep) {
         const [x1, y1] = project([bbox[0], lat]);
         const [x2, y2] = project([bbox[2], lat]);
         ctx.beginPath();
@@ -501,8 +555,8 @@
       tractGeo.features.forEach(feature => {
         ctx.beginPath();
         drawFeature(feature);
-        ctx.fillStyle = exposureColor(Number(feature.properties.exposure));
-        ctx.globalAlpha = 0.58;
+        ctx.fillStyle = feature.properties.in_region ? exposureColor(Number(feature.properties.exposure)) : '#d6d6d0';
+        ctx.globalAlpha = feature.properties.in_region ? 0.58 : 0.35;
         ctx.fill('evenodd');
       });
 
@@ -520,12 +574,12 @@
       });
 
       const cities = [
-        ['Buffalo', -78.8784, 42.8864],
-        ['Rochester', -77.6088, 43.1566],
-        ['Syracuse', -76.1474, 43.0481],
-        ['Albany', -73.7562, 42.6526],
-        ['NYC', -74.0060, 40.7128],
-        ['Long Island', -73.08, 40.82]
+        ['Manhattan', -73.9712, 40.7831],
+        ['Brooklyn', -73.9442, 40.6782],
+        ['Queens', -73.7949, 40.7282],
+        ['Bronx', -73.8648, 40.8448],
+        ['Staten Island', -74.1502, 40.5795],
+        ['Westchester', -73.7949, 41.0562]
       ];
       ctx.font = '12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
       ctx.textBaseline = 'middle';
@@ -574,21 +628,28 @@
         type: 'fill',
         source: 'tracts',
         paint: {
-          'fill-color': ['interpolate', ['linear'], ['coalesce', ['get', 'exposure'], -1],
-            -1, '#cccccc',
-            0.10, '#edf8fb',
-            0.16, '#b2e2e2',
-            0.20, '#66c2a4',
-            0.23, '#2ca25f',
-            0.26, '#006d2c'],
-          'fill-opacity': 0.58
+          'fill-color': ['case', ['==', ['get', 'in_region'], true],
+            ['interpolate', ['linear'], ['coalesce', ['get', 'exposure'], -1],
+              -1, '#cccccc',
+              0.10, '#edf8fb',
+              0.16, '#b2e2e2',
+              0.20, '#66c2a4',
+              0.23, '#2ca25f',
+              0.26, '#006d2c'],
+            '#d6d6d0'
+          ],
+          'fill-opacity': ['case', ['==', ['get', 'in_region'], true], 0.58, 0.1]
         }
       });
       map.addLayer({
         id: 'tract-outline',
         type: 'line',
         source: 'tracts',
-        paint: { 'line-color': '#2c3631', 'line-opacity': 0.15, 'line-width': 0.25 }
+        paint: {
+          'line-color': '#2c3631',
+          'line-opacity': ['case', ['==', ['get', 'in_region'], true], 0.15, 0.05],
+          'line-width': 0.25
+        }
       });
       map.addLayer({
         id: 'holc-fill',
@@ -610,6 +671,7 @@
         map.on('click', layer, e => {
           const props = e.features?.[0]?.properties;
           if (!props) return;
+          if (layer === 'tract-exposure' && !props.in_region) return;
           new maplibregl.Popup({ offset: 12, maxWidth: '280px' })
             .setLngLat(e.lngLat)
             .setHTML(popupHtml(props))
@@ -627,11 +689,16 @@
         fetch(HOLC_URL).then(r => r.json()),
         fetch(SUMMARY_URL).then(r => r.json())
       ]);
-      tractGeoData = tractGeo;
-      holcGeoData = holcGeo;
-      summaryData = summary;
+      tractGeo.features.forEach(f => { f.properties.in_region = inStudyArea(f.properties.GEOID); });
+      const inRegionFeatures = tractGeo.features.filter(f => f.properties.in_region);
+      studyBounds = studyAreaBounds(inRegionFeatures);
 
-      drawFallbackMap(tractGeo, holcGeo);
+      tractGeoData = tractGeo;
+      holcGeoData = { ...holcGeo, features: holcGeo.features.filter(f => TARGET_HOLC_CITIES.includes(f.properties.city)) };
+      summaryData = { ...summary, grade_summary: computeGradeSummary(inRegionFeatures) };
+
+      drawFallbackMap(tractGeoData, holcGeoData, studyBounds);
+      if (map) map.fitBounds([[studyBounds[0], studyBounds[1]], [studyBounds[2], studyBounds[3]]], { padding: 30, duration: 0 });
       document.getElementById('holcToggle').addEventListener('change', e => {
         if (!mapLayersAdded) return;
         const visibility = e.target.checked ? 'visible' : 'none';
@@ -658,8 +725,8 @@
       map = new maplibregl.Map({
         container: 'map',
         style: BASEMAP_STYLE,
-        center: [-75.1, 42.75],
-        zoom: 6.7
+        center: [-73.85, 40.85],  // NYC + Westchester County, refined by fitBounds once data loads
+        zoom: 9.3
       });
       map.addControl(new maplibregl.NavigationControl(), 'top-right');
       map.on('load', addMapLayers);

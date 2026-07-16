@@ -254,7 +254,7 @@
   <header>
     <div>
       <h1 data-i18n="pageTitle">NY Allergy Equity — Quadrant Analysis</h1>
-      <p data-i18n="pageSubtitle">Median-split tracts into four groups to see whether race/ethnicity concentration and allergen exposure cluster together.</p>
+      <p data-i18n="pageSubtitle">Median-split tracts in NYC and Westchester County into four groups to see whether race/ethnicity concentration and allergen exposure cluster together.</p>
     </div>
     <div class="header-actions">
       <nav class="tab-nav">
@@ -313,7 +313,7 @@
       en: {
         documentTitle: 'NY Allergy Equity - Quadrant Analysis',
         pageTitle: 'NY Allergy Equity Quadrant Analysis',
-        pageSubtitle: 'Median-split tracts into four groups to see whether race/ethnicity concentration and allergen exposure cluster together.',
+        pageSubtitle: 'Median-split tracts in NYC and Westchester County into four groups to see whether race/ethnicity concentration and allergen exposure cluster together.',
         mapLink: 'Map',
         correlationLink: 'Correlation',
         quadrantLink: 'Quadrant',
@@ -354,7 +354,7 @@
       zh: {
         documentTitle: '纽约过敏公平 - 象限分析',
         pageTitle: '纽约过敏公平象限分析',
-        pageSubtitle: '将 census tract 按中位数拆分为四组，用来观察种族/族裔集中度与过敏暴露是否聚集在一起。',
+        pageSubtitle: '将纽约市和 Westchester County 的 census tract 按中位数拆分为四组，用来观察种族/族裔集中度与过敏暴露是否聚集在一起。',
         mapLink: '地图',
         correlationLink: '相关性',
         quadrantLink: '象限',
@@ -466,6 +466,13 @@
     };
     const CORE_INDICATORS = ['people_of_color_pct', 'median_home_value', 'poverty_rate', 'income', 'renter_pct', 'under18_pct', 'over65_pct'];
     const OUTCOME_KEY = 'exposure';
+
+    // Study area: NYC's five boroughs + Westchester County. GEOID = state(2)
+    // + county(3) + tract(6); first 5 digits identify the county.
+    const TARGET_COUNTY_FIPS = ['36005', '36047', '36061', '36081', '36085', '36119'];
+    function inStudyArea(geoid) {
+      return TARGET_COUNTY_FIPS.includes(String(geoid).slice(0, 5));
+    }
 
     // Quadrant palette — validated against the site's light surface with
     // node scripts/validate_palette.js from the dataviz skill (--pairs all,
@@ -681,7 +688,7 @@
       const response = await fetch(DATA_URL);
       if (!response.ok) throw new Error(`Could not load ${DATA_URL}`);
       const geojson = await response.json();
-      rows = geojson.features.map(feature => feature.properties);
+      rows = geojson.features.map(feature => feature.properties).filter(row => inStudyArea(row.GEOID));
       populateControls();
       const ctx = document.getElementById('quadrantChart').getContext('2d');
       chart = new Chart(ctx, {

@@ -2,6 +2,10 @@
 
 A static MapLibre GL JS research prototype for studying the relationship between environmental allergy exposure and social equity across New York State census tracts.
 
+## Study Area
+
+All visualizations and analyses (map, correlation, quadrant, and redlining pages) are scoped to **New York City's five boroughs and Westchester County** (2,568 of the state's 5,411 tracts). The underlying dataset still covers the whole state; the rest of New York is shaded out on the map for geographic context but excluded from every statistic (correlation coefficients, quadrant counts, HOLC grade summaries, etc.). The county FIPS codes used for the filter are `36005` (Bronx), `36047` (Kings/Brooklyn), `36061` (New York/Manhattan), `36081` (Queens), `36085` (Richmond/Staten Island), and `36119` (Westchester).
+
 ---
 
 ## Research Question
