@@ -1,0 +1,306 @@
+{
+  "total_trees": 651951,
+  "total_basal_area_m2": 69946.0,
+  "genus_summary": [
+    {
+      "genus": "Platanus",
+      "count": 87010,
+      "pct_of_trees": 13.35,
+      "basal_area_m2": 24109.6,
+      "pct_of_basal_area": 34.47,
+      "weight": 1.44,
+      "sum_p": 379082.5,
+      "pct_of_total_potential": 55.88
+    },
+    {
+      "genus": "Quercus",
+      "count": 82846,
+      "pct_of_trees": 12.71,
+      "basal_area_m2": 12736.4,
+      "pct_of_basal_area": 18.21,
+      "weight": 0.9,
+      "sum_p": 151748.9,
+      "pct_of_total_potential": 22.37
+    },
+    {
+      "genus": "Fraxinus",
+      "count": 19978,
+      "pct_of_trees": 3.06,
+      "basal_area_m2": 2182.5,
+      "pct_of_basal_area": 3.12,
+      "weight": 1.12,
+      "sum_p": 49619.9,
+      "pct_of_total_potential": 7.31
+    },
+    {
+      "genus": "Ginkgo",
+      "count": 21019,
+      "pct_of_trees": 3.22,
+      "basal_area_m2": 1129.1,
+      "pct_of_basal_area": 1.61,
+      "weight": 1.23,
+      "sum_p": 36753.3,
+      "pct_of_total_potential": 5.42
+    },
+    {
+      "genus": "Gleditsia",
+      "count": 64255,
+      "pct_of_trees": 9.86,
+      "basal_area_m2": 4274.8,
+      "pct_of_basal_area": 6.11,
+      "weight": 0.2,
+      "sum_p": 22046.9,
+      "pct_of_total_potential": 3.25
+    },
+    {
+      "genus": "Ulmus",
+      "count": 14910,
+      "pct_of_trees": 2.29,
+      "basal_area_m2": 1364.3,
+      "pct_of_basal_area": 1.95,
+      "weight": 0.51,
+      "sum_p": 11942.4,
+      "pct_of_total_potential": 1.76
+    },
+    {
+      "genus": "Zelkova",
+      "count": 29254,
+      "pct_of_trees": 4.49,
+      "basal_area_m2": 1332.8,
+      "pct_of_basal_area": 1.91,
+      "weight": 0.28,
+      "sum_p": 10608.8,
+      "pct_of_total_potential": 1.56
+    },
+    {
+      "genus": "Acer",
+      "count": 88704,
+      "pct_of_trees": 13.61,
+      "basal_area_m2": 10887.4,
+      "pct_of_basal_area": 15.57,
+      "weight": 0.05,
+      "sum_p": 9404.6,
+      "pct_of_total_potential": 1.39
+    },
+    {
+      "genus": "Liquidambar",
+      "count": 10655,
+      "pct_of_trees": 1.63,
+      "basal_area_m2": 965.3,
+      "pct_of_basal_area": 1.38,
+      "weight": 0.14,
+      "sum_p": 2631.7,
+      "pct_of_total_potential": 0.39
+    },
+    {
+      "genus": "Prunus",
+      "count": 41626,
+      "pct_of_trees": 6.38,
+      "basal_area_m2": 958.4,
+      "pct_of_basal_area": 1.37,
+      "weight": 0.05,
+      "sum_p": 1856.5,
+      "pct_of_total_potential": 0.27
+    },
+    {
+      "genus": "Tilia",
+      "count": 51260,
+      "pct_of_trees": 7.86,
+      "basal_area_m2": 3530.9,
+      "pct_of_basal_area": 5.05,
+      "weight": 0.02,
+      "sum_p": 1608.7,
+      "pct_of_total_potential": 0.24
+    },
+    {
+      "genus": "Celtis",
+      "count": 2381,
+      "pct_of_trees": 0.37,
+      "basal_area_m2": 73.0,
+      "pct_of_basal_area": 0.1,
+      "weight": 0.03,
+      "sum_p": 72.0,
+      "pct_of_total_potential": 0.01
+    },
+    {
+      "genus": "Robinia",
+      "count": 1784,
+      "pct_of_trees": 0.27,
+      "basal_area_m2": 208.1,
+      "pct_of_basal_area": 0.3,
+      "weight": 0.02,
+      "sum_p": 68.0,
+      "pct_of_total_potential": 0.01
+    },
+    {
+      "genus": "Koelreuteria",
+      "count": 3718,
+      "pct_of_trees": 0.57,
+      "basal_area_m2": 64.8,
+      "pct_of_basal_area": 0.09,
+      "weight": 0.02,
+      "sum_p": 59.8,
+      "pct_of_total_potential": 0.01
+    },
+    {
+      "genus": "Malus",
+      "count": 3521,
+      "pct_of_trees": 0.54,
+      "basal_area_m2": 73.2,
+      "pct_of_basal_area": 0.1,
+      "weight": 0.02,
+      "sum_p": 58.9,
+      "pct_of_total_potential": 0.01
+    },
+    {
+      "genus": "Syringa",
+      "count": 5027,
+      "pct_of_trees": 0.77,
+      "basal_area_m2": 58.3,
+      "pct_of_basal_area": 0.08,
+      "weight": 0.02,
+      "sum_p": 57.9,
+      "pct_of_total_potential": 0.01
+    },
+    {
+      "genus": "Carpinus",
+      "count": 4039,
+      "pct_of_trees": 0.62,
+      "basal_area_m2": 66.5,
+      "pct_of_basal_area": 0.1,
+      "weight": 0.02,
+      "sum_p": 55.0,
+      "pct_of_total_potential": 0.01
+    },
+    {
+      "genus": "Cercis",
+      "count": 4013,
+      "pct_of_trees": 0.62,
+      "basal_area_m2": 57.2,
+      "pct_of_basal_area": 0.08,
+      "weight": 0.02,
+      "sum_p": 53.7,
+      "pct_of_total_potential": 0.01
+    },
+    {
+      "genus": "Metasequoia",
+      "count": 3020,
+      "pct_of_trees": 0.46,
+      "basal_area_m2": 77.9,
+      "pct_of_basal_area": 0.11,
+      "weight": 0.02,
+      "sum_p": 50.5,
+      "pct_of_total_potential": 0.01
+    },
+    {
+      "genus": "Aesculus",
+      "count": 1285,
+      "pct_of_trees": 0.2,
+      "basal_area_m2": 170.9,
+      "pct_of_basal_area": 0.24,
+      "weight": 0.02,
+      "sum_p": 50.2,
+      "pct_of_total_potential": 0.01
+    },
+    {
+      "genus": "Morus",
+      "count": 1155,
+      "pct_of_trees": 0.18,
+      "basal_area_m2": 202.9,
+      "pct_of_basal_area": 0.29,
+      "weight": 0.02,
+      "sum_p": 48.0,
+      "pct_of_total_potential": 0.01
+    },
+    {
+      "genus": "Cornus",
+      "count": 3196,
+      "pct_of_trees": 0.49,
+      "basal_area_m2": 59.5,
+      "pct_of_basal_area": 0.09,
+      "weight": 0.02,
+      "sum_p": 48.0,
+      "pct_of_total_potential": 0.01
+    },
+    {
+      "genus": "Gymnocladus",
+      "count": 3364,
+      "pct_of_trees": 0.52,
+      "basal_area_m2": 62.8,
+      "pct_of_basal_area": 0.09,
+      "weight": 0.02,
+      "sum_p": 47.7,
+      "pct_of_total_potential": 0.01
+    },
+    {
+      "genus": "Maackia",
+      "count": 2196,
+      "pct_of_trees": 0.34,
+      "basal_area_m2": 48.3,
+      "pct_of_basal_area": 0.07,
+      "weight": 0.02,
+      "sum_p": 36.9,
+      "pct_of_total_potential": 0.01
+    },
+    {
+      "genus": "Liriodendron",
+      "count": 1069,
+      "pct_of_trees": 0.16,
+      "basal_area_m2": 189.3,
+      "pct_of_basal_area": 0.27,
+      "weight": 0.02,
+      "sum_p": 31.1,
+      "pct_of_total_potential": 0.0
+    },
+    {
+      "genus": "Ailanthus",
+      "count": 756,
+      "pct_of_trees": 0.12,
+      "basal_area_m2": 88.8,
+      "pct_of_basal_area": 0.13,
+      "weight": 0.02,
+      "sum_p": 29.6,
+      "pct_of_total_potential": 0.0
+    },
+    {
+      "genus": "Betula",
+      "count": 1399,
+      "pct_of_trees": 0.21,
+      "basal_area_m2": 37.5,
+      "pct_of_basal_area": 0.05,
+      "weight": 0.02,
+      "sum_p": 24.2,
+      "pct_of_total_potential": 0.0
+    },
+    {
+      "genus": "Catalpa",
+      "count": 551,
+      "pct_of_trees": 0.08,
+      "basal_area_m2": 79.9,
+      "pct_of_basal_area": 0.11,
+      "weight": 0.02,
+      "sum_p": 23.7,
+      "pct_of_total_potential": 0.0
+    },
+    {
+      "genus": "Pinus",
+      "count": 700,
+      "pct_of_trees": 0.11,
+      "basal_area_m2": 57.0,
+      "pct_of_basal_area": 0.08,
+      "weight": 0.02,
+      "sum_p": 21.9,
+      "pct_of_total_potential": 0.0
+    },
+    {
+      "genus": "Ostrya",
+      "count": 1081,
+      "pct_of_trees": 0.17,
+      "basal_area_m2": 35.8,
+      "pct_of_basal_area": 0.05,
+      "weight": 0.02,
+      "sum_p": 20.3,
+      "pct_of_total_potential": 0.0
+    }
+  ]
+}
