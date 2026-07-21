@@ -168,6 +168,7 @@
   <h1 data-i18n="mapTitle">NY Allergy Equity</h1>
   <div class="header-actions">
     <nav class="tab-nav">
+        <a href="overview.html" class="tab-link">Overview</a>
       <a href="index.html" class="tab-link active" data-i18n="mapLink">Map</a>
       <a href="correlation.html" class="tab-link" data-i18n="correlationLink">Correlation</a>
       <a href="quadrant.html" class="tab-link" data-i18n="quadrantLink">Quadrant</a>
@@ -246,7 +247,7 @@
   </div>
 
   <div class="note">
-    <span data-i18n="controlsNote1">2,568 census tracts across NYC and Westchester County · ACS 5-year 2023 · Open-Meteo 7-day exposure samples. Rest of the state shown for context, shaded out.</span><br>
+    <span data-i18n="controlsNote1">2,327 census tracts across NYC's five boroughs with street-tree data · ACS 5-year 2023 · Open-Meteo 7-day exposure samples. Rest of the state shown for context, shaded out.</span><br>
     <span data-i18n="controlsNote2">Dataset is downloaded into</span> <code>data/</code> <span data-i18n="controlsNote3">for GitHub Pages.</span>
   </div>
 </div>
@@ -300,7 +301,7 @@ const I18N = {
     medianIncome: 'Median Income',
     povertyRate: 'Poverty Rate',
     peopleOfColor: 'People of Color',
-    controlsNote1: '2,568 census tracts across NYC and Westchester County · ACS 5-year 2023 · Open-Meteo 7-day exposure samples. Rest of the state shown for context, shaded out.',
+    controlsNote1: '2,327 census tracts across NYC's five boroughs with street-tree data · ACS 5-year 2023 · Open-Meteo 7-day exposure samples. Rest of the state shown for context, shaded out.',
     controlsNote2: 'Dataset is downloaded into',
     controlsNote3: 'for GitHub Pages.',
     mapLink: 'Map',
@@ -364,7 +365,7 @@ const I18N = {
     medianIncome: '收入中位数',
     povertyRate: '贫困率',
     peopleOfColor: '有色人种比例',
-    controlsNote1: '纽约市和 Westchester County 共 2,568 个 census tracts · ACS 2023 五年数据 · Open-Meteo 7 天暴露采样。州内其余区域仅作背景显示，已淡化。',
+    controlsNote1: '纽约市五个行政区共 2,327 个有街道树木数据的 census tracts · ACS 2023 五年数据 · Open-Meteo 7 天暴露采样。州内其余区域仅作背景显示，已淡化。',
     controlsNote2: '数据已下载到',
     controlsNote3: '可用于 GitHub Pages。',
     mapLink: '地图',
@@ -446,9 +447,9 @@ function setLanguage(lang) {
 const HARRISON   = { lat: 40.9676, lng: -73.7124 };
 const STATE      = '36';  // New York
 
-// Study area: NYC's five boroughs + Westchester County.
+// Study area: NYC's five boroughs.
 // GEOID = state(2) + county(3) + tract(6); first 5 digits identify the county.
-const TARGET_COUNTY_FIPS = ['36005', '36047', '36061', '36081', '36085', '36119'];
+const TARGET_COUNTY_FIPS = ['36005', '36047', '36061', '36081', '36085'];
 function inStudyArea(geoid) {
   return TARGET_COUNTY_FIPS.includes(String(geoid).slice(0, 5));
 }
@@ -710,7 +711,7 @@ function scatterAxesForLayer(layerKey) {
 const map = new maplibregl.Map({
   container: 'map',
   style: 'https://tiles.openfreemap.org/styles/bright',
-  center: [-73.85, 40.85],  // NYC + Westchester County, refined by fitBounds on load
+  center: [-73.94, 40.70],  // NYC, refined by fitBounds on load
   zoom: 9.3
 });
 map.addControl(new maplibregl.NavigationControl(), 'top-right');

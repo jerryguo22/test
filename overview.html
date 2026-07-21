@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NYC Allergenic Tree Pollen Index — Overview</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin:0; background:#f5f6f3; color:#171b1a; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:14px 18px; border-bottom:1px solid #d7ddd8; background:#fff; }
+  h1 { margin:0; font-size:20px; }
+  header p { margin:3px 0 0; color:#64706a; font-size:12px; }
+  .header-actions { display:flex; align-items:center; gap:10px; }
+  .tab-nav { display:flex; gap:4px; }
+  .tab-link { padding:7px 12px; border-radius:4px; color:#52605b; font-size:13px; font-weight:760; text-decoration:none; }
+  .tab-link:hover { background:#f5f6f3; color:#171b1a; }
+  .tab-link.active { background:#eef7f4; color:#0b6b63; }
+  main { max-width: 900px; margin: 0 auto; padding: 24px 18px 60px; }
+  section { background:#fff; border:1px solid #d7ddd8; border-radius:4px; padding:20px 22px; margin-bottom:16px; }
+  .num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:#0b6b63; color:#fff; font-size:13px; font-weight:760; margin-right:10px; }
+  h2 { font-size:16px; margin:0 0 10px; display:flex; align-items:center; }
+  p { line-height:1.55; font-size:14px; color:#28332f; margin:8px 0; }
+  .stat { display:inline-block; background:#eef7f4; color:#0b6b63; font-weight:760; padding:1px 6px; border-radius:3px; }
+  code.f { display:block; background:#f7faf8; border:1px solid #e1e6e2; border-radius:4px; padding:10px 12px; font-size:12.5px; margin:6px 0; }
+  .disclaimer { border-left:3px solid #b23231; background:#fdf1f1; padding:10px 12px; font-size:12.5px; color:#5a2323; border-radius:4px; margin-top:10px; }
+  a.explore { color:#0b6b63; font-weight:760; text-decoration:none; }
+  .explore-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:8px; margin-top:10px; }
+  .explore-grid a { display:block; padding:10px; border:1px solid #d7ddd8; border-radius:4px; text-align:center; font-size:13px; font-weight:700; color:#0b6b63; text-decoration:none; background:#fbfcfb; }
+  .explore-grid a:hover { background:#eef7f4; }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>NYC Allergenic Tree Pollen Index (ATPI)</h1>
+    <p>Do New York City's street trees put some neighborhoods' children at greater allergy risk than others?</p>
+  </div>
+  <div class="header-actions">
+    <nav class="tab-nav">
+      <a href="overview.html" class="tab-link active">Overview</a>
+      <a href="index.html" class="tab-link">Map</a>
+      <a href="correlation.html" class="tab-link">Correlation</a>
+      <a href="quadrant.html" class="tab-link">Quadrant</a>
+      <a href="history.html" class="tab-link">Redlining</a>
+    </nav>
+  </div>
+</header>
+<main>
+
+<section>
+  <h2><span class="num">1</span>Species Evidence</h2>
+  <p>NYC's 2015 Street Tree Census counted <span class="stat">651,951</span> living street trees. Abundance alone is a poor guide to allergy risk: what matters is pollen release <em>per unit of tree size</em>, not just how many trees exist. Using genus-level pollen-release ratios (share of measured airborne pollen &divide; share of trunk basal area) from a peer-reviewed study built on this same NYC Parks census plus NYC airborne pollen monitoring (Katz et al. 2024, <em>Urban Forestry &amp; Urban Greening</em>):</p>
+  <p><strong>London planetree</strong> (<em>Platanus &times; acerifolia</em>) is 13% of all street trees and 34% of total trunk area &mdash; but accounts for an estimated <span class="stat">56%</span> of citywide allergenic pollen potential. <strong>Pin oak and other Quercus</strong> add another <span class="stat">22%</span>. Together these two genera drive the large majority of NYC's street-tree pollen burden.</p>
+</section>
+
+<section>
+  <h2><span class="num">2</span>Historical Choice</h2>
+  <p>Did NYC select trees with allergies &mdash; and children &mdash; in mind? Municipal planting campaigns (MillionTreesNYC, 2007 onward; Greenstreets) prioritized species diversity, canopy resilience, and asthma-linked air-quality goals. Pollen allergenicity was not a documented selection criterion in that era, and London planetree, one of the highest allergenic-potential genera by this index, remained a standard street-tree choice for decades before awareness of its pollen load grew.</p>
+</section>
+
+<section>
+  <h2><span class="num">3</span>Index Construction — ATPI</h2>
+  <p>ATPI estimates <strong>relative source potential</strong> &mdash; not airborne concentration, personal exposure, allergy probability, or diagnosed disease. Its value is transparency: every tract score traces back to observed street trees.</p>
+  <code class="f">1 &middot; Tree basal area&nbsp; BA_i = &pi; &times; (DBH_i &times; 0.0254 &divide; 2)&sup2;</code>
+  <code class="f">2 &middot; Individual raw potential&nbsp; P_i = W_i &times; ln(1 + BA_i &divide; 0.01)</code>
+  <code class="f">3 &middot; Relative individual index&nbsp; ATPI_i = min(100, 100 &times; P_i &divide; Q&#8329;&#8329;(P))</code>
+  <code class="f">4 &middot; Census tract index&nbsp; D_t = &Sigma;P_i &divide; area_t;&nbsp; ATPI_t = min(100, 100 &times; D_t &divide; Q&#8329;&#8329;(D))</code>
+  <p>Computed across all <span class="stat">2,327</span> NYC tracts with street trees: <span class="stat">73</span> tracts score 75 or higher.</p>
+</section>
+
+<section>
+  <h2><span class="num">4</span>Association</h2>
+  <p>See the <a class="explore" href="correlation.html">Correlation</a> tab for which socioeconomic factor ATPI associates with most strongly across NYC tracts &mdash; race/ethnicity, income, poverty, home value, renter share, and age structure are all compared against allergen exposure there.</p>
+</section>
+
+<section>
+  <h2><span class="num">5</span>Child Priority</h2>
+  <p>Children are not prioritized because they have "weak immunity" &mdash; allergy is an immune <em>response</em>, not a general deficiency. They are a useful priority population because (a) asthma and allergy can disrupt health and school participation, (b) exposures around schools and homes are actionable through planting decisions, and (c) younger children rely on adults and institutions to recognize and respond to symptoms.</p>
+</section>
+
+<section>
+  <h2><span class="num">6</span>Action for Children</h2>
+  <p>Where high child-population share overlaps with high ATPI, planting decisions are the most actionable lever available to the city: favoring low-release genera near schools and playgrounds, and prioritizing future canopy investment away from the highest-potential genera identified in Section 1.</p>
+</section>
+
+<section>
+  <h2><span class="num">7</span>Explore</h2>
+  <p>Interactive tools: the tree map and ATPI heatmap live on the Map tab; correlation and the children &times; ATPI quadrant analysis are their own tabs below.</p>
+  <div class="explore-grid">
+    <a href="index.html">Map + Tree layer</a>
+    <a href="correlation.html">Correlation analysis</a>
+    <a href="quadrant.html">Child share &times; ATPI quadrant</a>
+    <a href="history.html">Historical redlining</a>
+  </div>
+</section>
+
+<div class="disclaimer">ATPI is a research prototype estimating relative tree-pollen source potential from NYC Parks street-tree data. It is not a measure of air concentration, personal exposure, or medical risk, and is not medical advice.</div>
+
+</main>
+</body>
+</html>
