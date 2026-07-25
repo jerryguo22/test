@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tree Map — NYC Street Trees</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" />
+<script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body, html { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  body { display: flex; flex-direction: column; }
+  header { flex: 0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:16px; height:52px; padding:0 16px; border-bottom:1px solid #d7ddd8; background:#fff; z-index:2; }
+  header h1 { font-size:16px; font-weight:700; color:#171b1a; }
+  .header-actions { display:flex; align-items:center; gap:10px; }
+  .tab-nav { display:flex; gap:4px; }
+  .tab-link { padding:7px 12px; border-radius:4px; color:#52605b; font-size:13px; font-weight:760; text-decoration:none; }
+  .tab-link:hover { background:#f5f6f3; color:#171b1a; }
+  .tab-link.active { background:#eef7f4; color:#0b6b63; }
+  #map-stage { position:relative; flex:1 1 auto; min-height:0; }
+  #map { width:100%; height:100%; }
+  .panel { position:absolute; background:#fff; border-radius:10px; box-shadow:0 2px 14px rgba(0,0,0,0.15); z-index:1; }
+  #controls { top:14px; right:14px; padding:14px 16px; width:220px; }
+  #controls .ctrl-label { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#888; margin-bottom:8px; }
+  #controls label { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; padding:3px 0; cursor:pointer; }
+  #legend { bottom:20px; left:14px; padding:12px 14px; width:200px; }
+  #legend .leg-title { font-size:11px; font-weight:700; color:#444; margin-bottom:6px; }
+  .leg-row { display:flex; align-items:center; gap:7px; font-size:11px; color:#555; margin-bottom:4px; }
+  .leg-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  #legend .note { margin-top:6px; font-size:10px; color:#999; line-height:1.4; }
+  #loading { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px 28px; border-radius:10px; box-shadow:0 4px 24px rgba(0,0,0,0.15); font-size:13px; color:#555; z-index:10; }
+  #count { position:absolute; bottom:20px; right:14px; z-index:1; background:rgba(255,255,255,0.9); padding:6px 10px; border-radius:6px; font-size:11px; color:#666; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Tree Map</h1>
+  <div class="header-actions">
+    <nav class="tab-nav">
+      <a href="overview.html" class="tab-link">Overview</a>
+      <a href="index.html" class="tab-link">Map</a>
+      <a href="tree-map.html" class="tab-link active">Tree Map</a>
+      <a href="atpi-map.html" class="tab-link">ATPI Heatmap</a>
+      <a href="correlation.html" class="tab-link">Correlation</a>
+      <a href="quadrant.html" class="tab-link">Quadrant</a>
+      <a href="history.html" class="tab-link">Redlining</a>
+    </nav>
+  </div>
+</header>
+<div id="map-stage">
+  <div id="map"></div>
+  <div id="loading">Loading tree points...</div>
+  <div id="controls" class="panel">
+    <div class="ctrl-label">Show</div>
+    <label><input type="radio" name="mode" value="genus" checked> Top allergenic genera</label>
+    <label><input type="radio" name="mode" value="atpi"> Individual tree ATPI</label>
+  </div>
+  <div id="legend" class="panel"></div>
+  <div id="count"></div>
+</div>
+<script>
+const GENUS_COLORS = {
+  Platanus: '#00441b', Quercus: '#2ca25f', Fraxinus: '#66c2a4',
+  Ginkgo: '#238b45', Gleditsia: '#99d8c9', Ulmus: '#a6bddb',
+  Zelkova: '#74a9cf', Acer: '#d0d1e6'
+};
+const OTHER_COLOR = '#cccccc';
+
+const map = new maplibregl.Map({
+  container: 'map',
+  style: 'https://tiles.openfreemap.org/styles/bright',
+  center: [-73.94, 40.70],
+  zoom: 10.3
+});
+map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+function renderLegendGenus() {
+  const rows = Object.entries(GENUS_COLORS)
+    .map(([g, c]) => `<div class="leg-row"><span class="leg-dot" style="background:${c}"></span>${g}</div>`)
+    .join('');
+  document.getElementById('legend').innerHTML = `
+    <div class="leg-title">Genus (by pollen potential)</div>
+    ${rows}
+    <div class="leg-row"><span class="leg-dot" style="background:${OTHER_COLOR}"></span>Other / low potential</div>
+    <div class="note">1-in-30 sample of NYC's 2015 street tree census, colored by the genera driving most citywide allergenic pollen potential (see Species Evidence).</div>
+  `;
+}
+function renderLegendATPI() {
+  document.getElementById('legend').innerHTML = `
+    <div class="leg-title">Individual tree ATPI (0–100)</div>
+    <div style="height:10px;border-radius:4px;background:linear-gradient(to right,#edf8fb,#66c2a4,#00441b);margin-bottom:4px;"></div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:#999;"><span>0</span><span>100</span></div>
+    <div class="note">Per-tree relative pollen potential (species weight × basal area), normalized to the 99th percentile across all NYC street trees.</div>
+  `;
+}
+
+map.on('load', async () => {
+  const loadingEl = document.getElementById('loading');
+  try {
+    const res = await fetch('data/nyc-tree-points-sample.geojson');
+    if (!res.ok) throw new Error(`Tree points ${res.status}`);
+    const geo = await res.json();
+    document.getElementById('count').textContent = `${geo.features.length.toLocaleString()} sampled trees (1-in-30)`;
+
+    map.addSource('trees', { type: 'geojson', data: geo });
+    map.addLayer({
+      id: 'tree-points', type: 'circle', source: 'trees',
+      paint: {
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 1.5, 14, 4],
+        'circle-color': ['match', ['get', 'genus'],
+          ...Object.entries(GENUS_COLORS).flat(),
+          OTHER_COLOR],
+        'circle-opacity': 0.75
+      }
+    });
+
+    map.on('mouseenter', 'tree-points', () => map.getCanvas().style.cursor = 'pointer');
+    map.on('mouseleave', 'tree-points', () => map.getCanvas().style.cursor = '');
+    map.on('click', 'tree-points', e => {
+      const p = e.features[0].properties;
+      new maplibregl.Popup({ offset: 8 })
+        .setLngLat(e.lngLat)
+        .setHTML(`<strong>${p.common || p.genus}</strong><br>Genus: ${p.genus}<br>DBH: ${p.dbh_in}in<br>Individual ATPI: ${p.atpi_i}`)
+        .addTo(map);
+    });
+
+    renderLegendGenus();
+    document.querySelectorAll('input[name="mode"]').forEach(radio => {
+      radio.addEventListener('change', e => {
+        if (e.target.value === 'atpi') {
+          map.setPaintProperty('tree-points', 'circle-color', [
+            'interpolate', ['linear'], ['get', 'atpi_i'],
+            0, '#edf8fb', 50, '#66c2a4', 100, '#00441b'
+          ]);
+          renderLegendATPI();
+        } else {
+          map.setPaintProperty('tree-points', 'circle-color', [
+            'match', ['get', 'genus'], ...Object.entries(GENUS_COLORS).flat(), OTHER_COLOR
+          ]);
+          renderLegendGenus();
+        }
+      });
+    });
+
+    loadingEl.style.display = 'none';
+  } catch (err) {
+    loadingEl.innerHTML = `<strong>Error</strong><br><small>${err.message}</small>`;
+  }
+});
+</script>
+</body>
+</html>

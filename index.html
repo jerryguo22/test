@@ -170,6 +170,8 @@
     <nav class="tab-nav">
         <a href="overview.html" class="tab-link">Overview</a>
       <a href="index.html" class="tab-link active" data-i18n="mapLink">Map</a>
+<a href="tree-map.html" class="tab-link">Tree Map</a>
+<a href="atpi-map.html" class="tab-link">ATPI Heatmap</a>
       <a href="correlation.html" class="tab-link" data-i18n="correlationLink">Correlation</a>
       <a href="quadrant.html" class="tab-link" data-i18n="quadrantLink">Quadrant</a>
       <a href="history.html" class="tab-link" data-i18n="historyLink">Redlining</a>
@@ -244,10 +246,13 @@
     <label class="radio-row">
       <input type="radio" name="ses" value="people_of_color"> <span data-i18n="peopleOfColor">People of Color</span>
     </label>
+    <label class="radio-row">
+      <input type="radio" name="ses" value="atpi"> <span data-i18n="atpiLayer">Allergenic Tree Pollen Index</span>
+    </label>
   </div>
 
   <div class="note">
-    <span data-i18n="controlsNote1">2,327 census tracts across NYC's five boroughs with street-tree data · ACS 5-year 2023 · Open-Meteo 7-day exposure samples. Rest of the state shown for context, shaded out.</span><br>
+    <span data-i18n="controlsNote1">2,327 census tracts across the five NYC boroughs with street-tree data · ACS 5-year 2023 · Open-Meteo 7-day exposure samples. Rest of the state shown for context, shaded out.</span><br>
     <span data-i18n="controlsNote2">Dataset is downloaded into</span> <code>data/</code> <span data-i18n="controlsNote3">for GitHub Pages.</span>
   </div>
 </div>
@@ -301,7 +306,8 @@ const I18N = {
     medianIncome: 'Median Income',
     povertyRate: 'Poverty Rate',
     peopleOfColor: 'People of Color',
-    controlsNote1: '2,327 census tracts across NYC's five boroughs with street-tree data · ACS 5-year 2023 · Open-Meteo 7-day exposure samples. Rest of the state shown for context, shaded out.',
+    atpiLayer: 'Allergenic Tree Pollen Index',
+    controlsNote1: '2,327 census tracts across the five NYC boroughs with street-tree data · ACS 5-year 2023 · Open-Meteo 7-day exposure samples. Rest of the state shown for context, shaded out.',
     controlsNote2: 'Dataset is downloaded into',
     controlsNote3: 'for GitHub Pages.',
     mapLink: 'Map',
@@ -365,6 +371,7 @@ const I18N = {
     medianIncome: '收入中位数',
     povertyRate: '贫困率',
     peopleOfColor: '有色人种比例',
+    atpiLayer: '过敏原树木花粉指数',
     controlsNote1: '纽约市五个行政区共 2,327 个有街道树木数据的 census tracts · ACS 2023 五年数据 · Open-Meteo 7 天暴露采样。州内其余区域仅作背景显示，已淡化。',
     controlsNote2: '数据已下载到',
     controlsNote3: '可用于 GitHub Pages。',
@@ -628,6 +635,21 @@ const SES = {
       0.75, '#d95f0e',
       1.00, '#7f2704'],
     note: { en: 'Demographic equity context, not part of vulnerability score', zh: '人口结构公平背景，不计入脆弱性分数' }
+  },
+  atpi: {
+    label:    { en: 'Allergenic Tree Pollen Index', zh: '过敏原树木花粉指数' },
+    field:    'atpi',
+    format:   v => v.toFixed(0),
+    lowLabel: { en: '0', zh: '0' }, highLabel: { en: '100', zh: '100' },
+    gradient: 'linear-gradient(to right,#edf8fb,#b2e2e2,#66c2a4,#2ca25f,#00441b)',
+    paint: ['interpolate', ['linear'], ['coalesce', ['get', 'atpi'], -1],
+      -1,  '#cccccc',
+      0,   '#edf8fb',
+      25,  '#b2e2e2',
+      50,  '#66c2a4',
+      75,  '#2ca25f',
+      100, '#00441b'],
+    note: { en: 'Relative street-tree pollen source potential from NYC Parks tree census (not air concentration or personal exposure)', zh: '基于纽约市公园局街道树木普查估算的相对花粉源潜力（不是空气浓度或个人暴露量）' }
   }
 };
 
@@ -693,12 +715,21 @@ const SCATTER_FIELDS = {
     format: v => `${Math.round(v)}`,
     min: 1900,
     max: 2025
+  },
+  atpi: {
+    label: { en: 'ATPI', zh: 'ATPI' },
+    field: 'atpi',
+    axis: { en: 'Allergenic Tree Pollen Index', zh: '过敏原树木花粉指数' },
+    format: v => v.toFixed(0),
+    min: 0,
+    max: 100
   }
 };
 
 function scatterAxesForLayer(layerKey) {
   if (layerKey === 'exposure') return ['vulnerability', 'exposure'];
   if (layerKey === 'equity_risk') return ['vulnerability', 'equity_risk'];
+  if (layerKey === 'atpi') return ['people_of_color', 'atpi'];
   if (['poverty', 'income', 'people_of_color', 'year_built', 'vulnerability'].includes(layerKey)) {
     return [layerKey, 'exposure'];
   }
@@ -745,6 +776,7 @@ function buildScatterChart(tractGeo) {
       poverty: p.poverty_rate,
       peopleOfColor: p.people_of_color_pct,
       yearBuilt: p.year_built,
+      atpi: p.atpi,
     });
   });
 
@@ -857,7 +889,7 @@ function addTractLayers(geo) {
     paint: {
       'fill-opacity': ['case', ['==', ['get', 'in_region'], true], 0.65, 0.08]
     }
-  }); // sits above Google Pollen raster tiles
+  });
 
   // outline — only drawn for in-study-area tracts; outside tracts show as flat shaded fill with no borders
   map.addLayer({
@@ -1151,13 +1183,10 @@ map.on('load', async () => {
     ]);
 
     tractGeoJSON = tractGeo;
+    // data/ny-allergy-equity.geojson and data/exposure-samples.geojson are now
+    // pre-trimmed to NYC at build time, so no client-side bbox filtering needed.
     const inRegionProps = scopeToStudyArea(tractGeoJSON, summary);
     const [[minLng, minLat], [maxLng, maxLat]] = studyAreaBounds(inRegionProps, tractGeoJSON);
-    const pad = 0.05;
-    sampleGeo.features = sampleGeo.features.filter(f => {
-      const [lng, lat] = f.geometry.coordinates;
-      return lng >= minLng - pad && lng <= maxLng + pad && lat >= minLat - pad && lat <= maxLat + pad;
-    });
 
     renderInfoPanel(summary);
     addTractLayers(tractGeoJSON);

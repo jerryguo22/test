@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATPI Heatmap — NYC Allergenic Tree Pollen Index</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl/dist/maplibre-gl.css" />
+<script src="https://unpkg.com/maplibre-gl/dist/maplibre-gl.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body, html { height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  body { display: flex; flex-direction: column; }
+  header { flex: 0 0 auto; display:flex; align-items:center; justify-content:space-between; gap:16px; height:52px; padding:0 16px; border-bottom:1px solid #d7ddd8; background:#fff; z-index:2; }
+  header h1 { font-size:16px; font-weight:700; color:#171b1a; }
+  .header-actions { display:flex; align-items:center; gap:10px; }
+  .tab-nav { display:flex; gap:4px; }
+  .tab-link { padding:7px 12px; border-radius:4px; color:#52605b; font-size:13px; font-weight:760; text-decoration:none; }
+  .tab-link:hover { background:#f5f6f3; color:#171b1a; }
+  .tab-link.active { background:#eef7f4; color:#0b6b63; }
+  #map-stage { position:relative; flex:1 1 auto; min-height:0; }
+  #map { width:100%; height:100%; }
+  .panel { position:absolute; background:#fff; border-radius:10px; box-shadow:0 2px 14px rgba(0,0,0,0.15); z-index:1; }
+  #legend { bottom:20px; right:14px; padding:14px 16px; width:210px; }
+  #legend .leg-title { font-size:12px; font-weight:760; color:#333; margin-bottom:8px; }
+  .grad-bar { height:10px; border-radius:4px; margin-bottom:4px; background:linear-gradient(to right,#edf8fb,#b2e2e2,#66c2a4,#2ca25f,#00441b); }
+  .grad-labels { display:flex; justify-content:space-between; font-size:10px; color:#999; }
+  #legend .note { margin-top:8px; font-size:10px; color:#999; line-height:1.4; }
+  #info { top:14px; left:14px; padding:14px 16px; width:250px; display:none; }
+  #info .tract-name { font-size:12px; font-weight:700; color:#222; margin-bottom:6px; }
+  #info .row { display:flex; justify-content:space-between; font-size:12px; color:#555; margin-bottom:4px; }
+  #info .row b { color:#111; }
+  #info .hint { font-size:11px; color:#999; }
+  #loading { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); background:#fff; padding:20px 28px; border-radius:10px; box-shadow:0 4px 24px rgba(0,0,0,0.15); font-size:13px; color:#555; z-index:10; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ATPI Heatmap</h1>
+  <div class="header-actions">
+    <nav class="tab-nav">
+      <a href="overview.html" class="tab-link">Overview</a>
+      <a href="index.html" class="tab-link">Map</a>
+      <a href="tree-map.html" class="tab-link">Tree Map</a>
+      <a href="atpi-map.html" class="tab-link active">ATPI Heatmap</a>
+      <a href="correlation.html" class="tab-link">Correlation</a>
+      <a href="quadrant.html" class="tab-link">Quadrant</a>
+      <a href="history.html" class="tab-link">Redlining</a>
+    </nav>
+  </div>
+</header>
+<div id="map-stage">
+  <div id="map"></div>
+  <div id="loading">Loading ATPI data...</div>
+  <div id="info" class="panel">
+    <div class="tract-name" id="info-name"></div>
+    <div class="row"><span>ATPI</span><b id="info-atpi">—</b></div>
+    <div class="row"><span>Street trees</span><b id="info-trees">—</b></div>
+    <div class="row"><span>Most common species</span><b id="info-species">—</b></div>
+    <div class="hint">Click any tract for detail.</div>
+  </div>
+  <div id="legend" class="panel">
+    <div class="leg-title">Allergenic Tree Pollen Index (0–100)</div>
+    <div class="grad-bar"></div>
+    <div class="grad-labels"><span>0 (low)</span><span>100 (high)</span></div>
+    <div class="note">Relative street-tree pollen source potential per tract, normalized to the 99th percentile. Gray = no street-tree data. Not a measure of air concentration or personal exposure.</div>
+  </div>
+</div>
+<script>
+const map = new maplibregl.Map({
+  container: 'map',
+  style: 'https://tiles.openfreemap.org/styles/bright',
+  center: [-73.94, 40.70],
+  zoom: 10
+});
+map.addControl(new maplibregl.NavigationControl(), 'top-right');
+
+map.on('load', async () => {
+  const loadingEl = document.getElementById('loading');
+  try {
+    const res = await fetch('data/ny-allergy-equity.geojson');
+    if (!res.ok) throw new Error(`Tract data ${res.status}`);
+    const geo = await res.json();
+
+    map.addSource('tracts', { type: 'geojson', data: geo });
+    map.addLayer({
+      id: 'atpi-fill', type: 'fill', source: 'tracts',
+      paint: {
+        'fill-color': ['interpolate', ['linear'], ['coalesce', ['get', 'atpi'], -1],
+          -1,  '#cccccc',
+          0,   '#edf8fb',
+          25,  '#b2e2e2',
+          50,  '#66c2a4',
+          75,  '#2ca25f',
+          100, '#00441b'],
+        'fill-opacity': 0.75
+      }
+    });
+    map.addLayer({
+      id: 'atpi-outline', type: 'line', source: 'tracts',
+      paint: { 'line-color': '#444', 'line-width': 0.3, 'line-opacity': 0.4 }
+    });
+    map.addLayer({
+      id: 'atpi-hover', type: 'line', source: 'tracts',
+      paint: { 'line-color': '#111', 'line-width': 2 },
+      filter: ['==', ['get', 'GEOID'], '']
+    });
+
+    map.on('mousemove', 'atpi-fill', e => {
+      if (!e.features.length) return;
+      map.getCanvas().style.cursor = 'pointer';
+      map.setFilter('atpi-hover', ['==', ['get', 'GEOID'], e.features[0].properties.GEOID]);
+    });
+    map.on('mouseleave', 'atpi-fill', () => {
+      map.getCanvas().style.cursor = '';
+      map.setFilter('atpi-hover', ['==', ['get', 'GEOID'], '']);
+    });
+    map.on('click', 'atpi-fill', e => {
+      const p = e.features[0].properties;
+      document.getElementById('info-name').textContent = p.name || `Tract ${p.TRACT}`;
+      document.getElementById('info-atpi').textContent = p.atpi != null ? p.atpi.toFixed(1) : 'no data';
+      document.getElementById('info-trees').textContent = (p.tree_count || 0).toLocaleString();
+      document.getElementById('info-species').textContent = p.top_species || '—';
+      document.getElementById('info').style.display = 'block';
+    });
+
+    loadingEl.style.display = 'none';
+  } catch (err) {
+    loadingEl.innerHTML = `<strong>Error</strong><br><small>${err.message}</small>`;
+  }
+});
+</script>
+</body>
+</html>

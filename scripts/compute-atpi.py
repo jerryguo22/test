@@ -41,7 +41,7 @@ def fetch_all_trees():
     offset = 0
     while True:
         q = {
-            "$select": "spc_latin,tree_dbh,boro_ct",
+            "$select": "spc_latin,spc_common,tree_dbh,boro_ct,latitude,longitude",
             "$where": "status='Alive'",
             "$limit": str(PAGE_SIZE),
             "$offset": str(offset),
@@ -100,8 +100,10 @@ def main():
     tract_tree_count = {}
     tract_species_count = {}
     all_p = []
+    sample_trees = []  # every Nth tree, for the tree-point map (652k is too many to render)
+    SAMPLE_STRIDE = 30
 
-    for tr in trees:
+    for i, tr in enumerate(trees):
         try:
             dbh_in = float(tr.get("tree_dbh", 0) or 0)
         except ValueError:
@@ -127,6 +129,18 @@ def main():
             tract_tree_count[geoid] = tract_tree_count.get(geoid, 0) + 1
             tract_species_count.setdefault(geoid, {})
             tract_species_count[geoid][spc] = tract_species_count[geoid].get(spc, 0) + 1
+
+        if i % SAMPLE_STRIDE == 0:
+            try:
+                lat, lng = float(tr.get("latitude")), float(tr.get("longitude"))
+            except (TypeError, ValueError):
+                lat = lng = None
+            if lat and lng:
+                sample_trees.append({
+                    "lat": lat, "lng": lng, "genus": genus,
+                    "common": (tr.get("spc_common") or "").strip(),
+                    "dbh_in": dbh_in, "p": p,
+                })
 
     all_p.sort()
     q99_p = all_p[int(len(all_p) * 0.99)] if all_p else 1
@@ -170,6 +184,27 @@ def main():
             "ATPI": round(atpi, 2),
             "top_species": top_species,
         }
+
+    tree_points = {
+        "type": "FeatureCollection",
+        "method": f"1-in-{SAMPLE_STRIDE} systematic sample of living street trees, for map display only (tract-level ATPI uses all trees).",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [t["lng"], t["lat"]]},
+                "properties": {
+                    "genus": t["genus"],
+                    "common": t["common"],
+                    "dbh_in": t["dbh_in"],
+                    "atpi_i": round(min(100.0, 100.0 * t["p"] / q99_p) if q99_p else 0.0, 1),
+                },
+            }
+            for t in sample_trees
+        ],
+    }
+    with open("data/nyc-tree-points-sample.geojson", "w") as f:
+        json.dump(tree_points, f, separators=(",", ":"))
+    print(f"Sampled tree points: {len(sample_trees)}")
 
     with open("data/nyc-tree-atpi-by-tract.json", "w") as f:
         json.dump({

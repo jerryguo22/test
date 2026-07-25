@@ -254,12 +254,14 @@
   <header>
     <div>
       <h1 data-i18n="pageTitle">NY Allergy Equity — Quadrant Analysis</h1>
-      <p data-i18n="pageSubtitle">Median-split tracts across NYC's five boroughs into four groups to see whether race/ethnicity concentration and allergen exposure cluster together.</p>
+      <p data-i18n="pageSubtitle">Median-split tracts across the five NYC boroughs into four groups to see whether race/ethnicity concentration and allergen exposure cluster together.</p>
     </div>
     <div class="header-actions">
       <nav class="tab-nav">
         <a href="overview.html" class="tab-link">Overview</a>
         <a href="index.html" class="tab-link" data-i18n="mapLink">Map</a>
+<a href="tree-map.html" class="tab-link">Tree Map</a>
+<a href="atpi-map.html" class="tab-link">ATPI Heatmap</a>
         <a href="correlation.html" class="tab-link" data-i18n="correlationLink">Correlation</a>
         <a href="quadrant.html" class="tab-link active" data-i18n="quadrantLink">Quadrant</a>
         <a href="history.html" class="tab-link" data-i18n="historyLink">Redlining</a>
@@ -273,8 +275,8 @@
       <p class="section-label" data-i18n="variables">Equity Indicator</p>
       <label for="xSelect" data-i18n="xAxis">Equity indicator</label>
       <select id="xSelect"></select>
-      <label data-i18n="yAxis">Outcome</label>
-      <div class="fixed-value" data-i18n="fixedOutcome">Allergen Exposure</div>
+      <label for="ySelect" data-i18n="yAxis">Outcome</label>
+      <select id="ySelect"></select>
       <p class="note" data-i18n="note">
         Each axis is split at its own median, so every tract falls into one of four groups: low/low, low/high, high/low, and high/high. This reveals whether the two variables cluster together, not just how strongly they trend together.
       </p>
@@ -314,7 +316,7 @@
       en: {
         documentTitle: 'NY Allergy Equity - Quadrant Analysis',
         pageTitle: 'NY Allergy Equity Quadrant Analysis',
-        pageSubtitle: 'Median-split tracts across NYC's five boroughs into four groups to see whether race/ethnicity concentration and allergen exposure cluster together.',
+        pageSubtitle: 'Median-split tracts across the five NYC boroughs into four groups to see whether race/ethnicity concentration and allergen exposure cluster together.',
         mapLink: 'Map',
         correlationLink: 'Correlation',
         quadrantLink: 'Quadrant',
@@ -463,10 +465,18 @@
         format: v => `${(v * 100).toFixed(1)}%`,
         min: 0,
         max: 0.45
+      },
+      atpi: {
+        label: { en: 'Allergenic Tree Pollen Index (ATPI)', zh: '过敏原树木花粉指数 (ATPI)' },
+        field: 'atpi',
+        format: v => v.toFixed(1),
+        min: 0,
+        max: 100
       }
     };
-    const CORE_INDICATORS = ['people_of_color_pct', 'median_home_value', 'poverty_rate', 'income', 'renter_pct', 'under18_pct', 'over65_pct'];
-    const OUTCOME_KEY = 'exposure';
+    const CORE_INDICATORS = ['under18_pct', 'people_of_color_pct', 'median_home_value', 'poverty_rate', 'income', 'renter_pct', 'over65_pct'];
+    const OUTCOMES = ['atpi', 'exposure'];
+    let OUTCOME_KEY = 'atpi';
 
     // Study area: NYC's five boroughs. GEOID = state(2)
     // + county(3) + tract(6); first 5 digits identify the county.
@@ -649,14 +659,23 @@
     }
 
     function refreshSelectLabels() {
-      const selections = { xSelect: document.getElementById('xSelect').value || 'people_of_color_pct' };
+      const selections = {
+        xSelect: document.getElementById('xSelect').value || 'under18_pct',
+        ySelect: document.getElementById('ySelect').value || OUTCOME_KEY
+      };
       const options = CORE_INDICATORS.map(key => [key, VARIABLES[key]])
         .map(([key, def]) => `<option value="${key}">${labelText(def.label)}</option>`)
         .join('');
       document.getElementById('xSelect').innerHTML = options;
       document.getElementById('xSelect').value = CORE_INDICATORS.includes(selections.xSelect)
         ? selections.xSelect
-        : 'people_of_color_pct';
+        : 'under18_pct';
+      document.getElementById('ySelect').innerHTML = OUTCOMES
+        .map(key => `<option value="${key}">${labelText(VARIABLES[key].label)}</option>`)
+        .join('');
+      document.getElementById('ySelect').value = OUTCOMES.includes(selections.ySelect)
+        ? selections.ySelect
+        : OUTCOME_KEY;
     }
 
     function populateControls() {
@@ -664,8 +683,13 @@
       const requestedIndicator = queryParams.get('indicator');
       document.getElementById('xSelect').value = CORE_INDICATORS.includes(requestedIndicator)
         ? requestedIndicator
-        : 'people_of_color_pct';
+        : 'under18_pct';
       document.getElementById('xSelect').addEventListener('change', updateChart);
+      document.getElementById('ySelect').value = OUTCOME_KEY;
+      document.getElementById('ySelect').addEventListener('change', e => {
+        OUTCOME_KEY = e.target.value;
+        updateChart();
+      });
     }
 
     function applyLanguage() {
