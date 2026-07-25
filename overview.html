@@ -6,61 +6,155 @@
 <title>NYC Allergenic Tree Pollen Index — Overview</title>
 <style>
   * { box-sizing: border-box; }
-  body { margin:0; background:#f5f6f3; color:#171b1a; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
-  header { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:14px 18px; border-bottom:1px solid #d7ddd8; background:#fff; }
-  h1 { margin:0; font-size:20px; }
-  header p { margin:3px 0 0; color:#64706a; font-size:12px; }
-  .header-actions { display:flex; align-items:center; gap:10px; }
+  body { margin:0; background:#f2f5f1; color:#171b1a; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+
+  /* ── top nav ── */
+  .topnav { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:10px 18px; background:#fff; border-bottom:1px solid #d7ddd8; }
+  .brand { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:760; color:#0b6b63; }
   .tab-nav { display:flex; gap:4px; }
   .tab-link { padding:7px 12px; border-radius:4px; color:#52605b; font-size:13px; font-weight:760; text-decoration:none; }
   .tab-link:hover { background:#f5f6f3; color:#171b1a; }
   .tab-link.active { background:#eef7f4; color:#0b6b63; }
-  main { max-width: 900px; margin: 0 auto; padding: 24px 18px 60px; }
-  section { background:#fff; border:1px solid #d7ddd8; border-radius:4px; padding:20px 22px; margin-bottom:16px; }
-  .num { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:50%; background:#0b6b63; color:#fff; font-size:13px; font-weight:760; margin-right:10px; }
-  h2 { font-size:16px; margin:0 0 10px; display:flex; align-items:center; }
-  p { line-height:1.55; font-size:14px; color:#28332f; margin:8px 0; }
-  .stat { display:inline-block; background:#eef7f4; color:#0b6b63; font-weight:760; padding:1px 6px; border-radius:3px; }
+
+  /* ── hero ── */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    padding: 40px 18px 34px;
+    background: linear-gradient(120deg, #0b3d2e 0%, #0b6b63 55%, #1baf7a 100%);
+    color: #fff;
+  }
+  .hero-inner { max-width: 900px; margin: 0 auto; position: relative; z-index: 2; }
+  .hero h1 { margin:0 0 8px; font-size: 27px; letter-spacing: -0.01em; }
+  .hero p { margin:0; font-size: 14.5px; color: #d9f2ea; max-width: 640px; line-height: 1.5; }
+  .treeline { position:absolute; inset:0; z-index:1; opacity:0.16; display:flex; align-items:flex-end; gap:0; }
+  .treeline svg { flex-shrink:0; }
+  .hero-stats { position:relative; z-index:2; display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
+  .hero-stat { background:rgba(255,255,255,0.14); border:1px solid rgba(255,255,255,0.28); border-radius:8px; padding:8px 14px; }
+  .hero-stat b { display:block; font-size:19px; line-height:1.15; }
+  .hero-stat span { font-size:10.5px; color:#d9f2ea; text-transform:uppercase; letter-spacing:.04em; }
+
+  main { max-width: 900px; margin: 0 auto; padding: 22px 18px 60px; }
+
+  section {
+    position: relative;
+    background:#fff;
+    border:1px solid #d7ddd8;
+    border-left: 5px solid var(--accent, #0b6b63);
+    border-radius:6px;
+    padding:20px 22px 20px 20px;
+    margin-bottom:16px;
+    box-shadow: 0 1px 3px rgba(20,30,25,0.04);
+  }
+  section::after {
+    content: '';
+    position: absolute;
+    top: 14px; right: 16px;
+    width: 34px; height: 34px;
+    background: var(--accent-tint, #eef7f4);
+    -webkit-mask: var(--tree-icon); mask: var(--tree-icon);
+    -webkit-mask-size: contain; mask-size: contain;
+    -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+    opacity: 0.9;
+  }
+  .num {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:26px; height:26px; border-radius:50%;
+    background: var(--accent, #0b6b63); color:#fff;
+    font-size:13px; font-weight:760; margin-right:10px; flex-shrink:0;
+  }
+  h2 { font-size:16.5px; margin:0 0 10px; display:flex; align-items:center; color:#171b1a; }
+  p { line-height:1.6; font-size:14px; color:#28332f; margin:8px 0; }
+  .stat {
+    display:inline-block; background: var(--accent-tint, #eef7f4); color: var(--accent-ink, #0b6b63);
+    font-weight:800; padding:2px 8px; border-radius:20px; font-variant-numeric: tabular-nums;
+  }
   code.f { display:block; background:#f7faf8; border:1px solid #e1e6e2; border-radius:4px; padding:10px 12px; font-size:12.5px; margin:6px 0; }
-  .disclaimer { border-left:3px solid #b23231; background:#fdf1f1; padding:10px 12px; font-size:12.5px; color:#5a2323; border-radius:4px; margin-top:10px; }
-  a.explore { color:#0b6b63; font-weight:760; text-decoration:none; }
-  .explore-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:8px; margin-top:10px; }
-  .explore-grid a { display:block; padding:10px; border:1px solid #d7ddd8; border-radius:4px; text-align:center; font-size:13px; font-weight:700; color:#0b6b63; text-decoration:none; background:#fbfcfb; }
-  .explore-grid a:hover { background:#eef7f4; }
+  .disclaimer { border-left:3px solid #b23231; background:#fdf1f1; padding:12px 14px; font-size:12.5px; color:#5a2323; border-radius:4px; margin-top:10px; display:flex; gap:10px; align-items:flex-start; }
+  .disclaimer svg { flex-shrink:0; margin-top:1px; }
+  a.explore { color:#0b6b63; font-weight:760; text-decoration:none; border-bottom:1px solid #b7ddd6; }
+  a.explore:hover { border-bottom-color:#0b6b63; }
+
+  .explore-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:10px; margin-top:12px; }
+  .explore-grid a {
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    padding:16px 10px; border:1px solid #d7ddd8; border-radius:8px;
+    text-align:center; font-size:12.5px; font-weight:700; color:#274b41;
+    text-decoration:none; background:#fbfcfb; transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+  }
+  .explore-grid a:hover { background:#eef7f4; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(11,107,99,0.12); }
+  .explore-grid svg { width:26px; height:26px; }
+
+  /* section accent themes, in the validated categorical order */
+  .s1 { --accent:#1baf7a; --accent-tint:#e3f7ee; --accent-ink:#0d7a51; }
+  .s2 { --accent:#eb6834; --accent-tint:#fdece3; --accent-ink:#a84a22; }
+  .s3 { --accent:#2a78d6; --accent-tint:#e6f0fc; --accent-ink:#1c5cab; }
+  .s4 { --accent:#4a3aa7; --accent-tint:#ece9f9; --accent-ink:#392d80; }
+  .s5 { --accent:#e87ba4; --accent-tint:#fceef3; --accent-ink:#b2537a; }
+  .s6 { --accent:#eda100; --accent-tint:#fdf3d9; --accent-ink:#a86f00; }
+  .s7 { --accent:#008300; --accent-tint:#e3f2e3; --accent-ink:#036603; }
 </style>
 </head>
 <body>
-<header>
-  <div>
+
+<!-- reusable tree-silhouette shape, referenced via mask -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="tree-shape" viewBox="0 0 64 64">
+      <path d="M32 2c9 8 15 17 15 26 0 6-3 10-7 12 2 1 5 4 5 9 0 6-6 11-13 11s-13-5-13-11c0-5 3-8 5-9-4-2-7-6-7-12 0-9 6-18 15-26z"/>
+      <rect x="29" y="46" width="6" height="16" rx="2"/>
+    </symbol>
+  </defs>
+</svg>
+
+<style>
+  main, .hero { --tree-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 2c9 8 15 17 15 26 0 6-3 10-7 12 2 1 5 4 5 9 0 6-6 11-13 11s-13-5-13-11c0-5 3-8 5-9-4-2-7-6-7-12 0-9 6-18 15-26z'/%3E%3Crect x='29' y='46' width='6' height='16' rx='2'/%3E%3C/svg%3E"); }
+</style>
+
+<div class="topnav">
+  <div class="brand">
+    <svg width="18" height="18" viewBox="0 0 64 64" fill="#0b6b63"><use href="#tree-shape"/></svg>
+    NYC ATPI
+  </div>
+  <nav class="tab-nav">
+    <a href="overview.html" class="tab-link active">Overview</a>
+    <a href="index.html" class="tab-link">Map</a>
+    <a href="tree-map.html" class="tab-link">Tree Map</a>
+    <a href="atpi-map.html" class="tab-link">ATPI Heatmap</a>
+    <a href="correlation.html" class="tab-link">Correlation</a>
+    <a href="quadrant.html" class="tab-link">Quadrant</a>
+    <a href="history.html" class="tab-link">Redlining</a>
+  </nav>
+</div>
+
+<div class="hero">
+  <div class="treeline" id="treeline"></div>
+  <div class="hero-inner">
     <h1>NYC Allergenic Tree Pollen Index (ATPI)</h1>
-    <p>Do New York City's street trees put some neighborhoods' children at greater allergy risk than others?</p>
+    <p>Do New York City's street trees put some neighborhoods' children at greater allergy risk than others? A transparent, tract-by-tract index built from NYC Parks' own street tree census.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><b>651,951</b><span>Living Street Trees</span></div>
+      <div class="hero-stat"><b>2,327</b><span>NYC Tracts Scored</span></div>
+      <div class="hero-stat"><b>56%</b><span>Pollen Potential from Platanus</span></div>
+      <div class="hero-stat"><b>73</b><span>Tracts Scoring ATPI ≥ 75</span></div>
+    </div>
   </div>
-  <div class="header-actions">
-    <nav class="tab-nav">
-      <a href="overview.html" class="tab-link active">Overview</a>
-      <a href="index.html" class="tab-link">Map</a>
-<a href="tree-map.html" class="tab-link">Tree Map</a>
-<a href="atpi-map.html" class="tab-link">ATPI Heatmap</a>
-      <a href="correlation.html" class="tab-link">Correlation</a>
-      <a href="quadrant.html" class="tab-link">Quadrant</a>
-      <a href="history.html" class="tab-link">Redlining</a>
-    </nav>
-  </div>
-</header>
+</div>
+
 <main>
 
-<section>
+<section class="s1">
   <h2><span class="num">1</span>Species Evidence</h2>
   <p>NYC's 2015 Street Tree Census counted <span class="stat">651,951</span> living street trees. Abundance alone is a poor guide to allergy risk: what matters is pollen release <em>per unit of tree size</em>, not just how many trees exist. Using genus-level pollen-release ratios (share of measured airborne pollen &divide; share of trunk basal area) from a peer-reviewed study built on this same NYC Parks census plus NYC airborne pollen monitoring (Katz et al. 2024, <em>Urban Forestry &amp; Urban Greening</em>):</p>
   <p><strong>London planetree</strong> (<em>Platanus &times; acerifolia</em>) is 13% of all street trees and 34% of total trunk area &mdash; but accounts for an estimated <span class="stat">56%</span> of citywide allergenic pollen potential. <strong>Pin oak and other Quercus</strong> add another <span class="stat">22%</span>. Together these two genera drive the large majority of NYC's street-tree pollen burden.</p>
 </section>
 
-<section>
+<section class="s2">
   <h2><span class="num">2</span>Historical Choice</h2>
   <p>Did NYC select trees with allergies &mdash; and children &mdash; in mind? Municipal planting campaigns (MillionTreesNYC, 2007 onward; Greenstreets) prioritized species diversity, canopy resilience, and asthma-linked air-quality goals. Pollen allergenicity was not a documented selection criterion in that era, and London planetree, one of the highest allergenic-potential genera by this index, remained a standard street-tree choice for decades before awareness of its pollen load grew.</p>
 </section>
 
-<section>
+<section class="s3">
   <h2><span class="num">3</span>Index Construction — ATPI</h2>
   <p>ATPI estimates <strong>relative source potential</strong> &mdash; not airborne concentration, personal exposure, allergy probability, or diagnosed disease. Its value is transparency: every tract score traces back to observed street trees.</p>
   <code class="f">1 &middot; Tree basal area&nbsp; BA_i = &pi; &times; (DBH_i &times; 0.0254 &divide; 2)&sup2;</code>
@@ -70,34 +164,54 @@
   <p>Computed across all <span class="stat">2,327</span> NYC tracts with street trees: <span class="stat">73</span> tracts score 75 or higher.</p>
 </section>
 
-<section>
+<section class="s4">
   <h2><span class="num">4</span>Association</h2>
   <p>See the <a class="explore" href="correlation.html">Correlation</a> tab for which socioeconomic factor ATPI associates with most strongly across NYC tracts &mdash; race/ethnicity, income, poverty, home value, renter share, and age structure are all compared against allergen exposure there.</p>
 </section>
 
-<section>
+<section class="s5">
   <h2><span class="num">5</span>Child Priority</h2>
   <p>Children are not prioritized because they have "weak immunity" &mdash; allergy is an immune <em>response</em>, not a general deficiency. They are a useful priority population because (a) asthma and allergy can disrupt health and school participation, (b) exposures around schools and homes are actionable through planting decisions, and (c) younger children rely on adults and institutions to recognize and respond to symptoms.</p>
 </section>
 
-<section>
+<section class="s6">
   <h2><span class="num">6</span>Action for Children</h2>
   <p>Where high child-population share overlaps with high ATPI, planting decisions are the most actionable lever available to the city: favoring low-release genera near schools and playgrounds, and prioritizing future canopy investment away from the highest-potential genera identified in Section 1.</p>
 </section>
 
-<section>
+<section class="s7">
   <h2><span class="num">7</span>Explore</h2>
-  <p>Interactive tools: the tree map and ATPI heatmap live on the Map tab; correlation and the children &times; ATPI quadrant analysis are their own tabs below.</p>
+  <p>Interactive tools: the tree map and ATPI heatmap live on their own tabs; correlation and the children &times; ATPI quadrant analysis are their own tabs below.</p>
   <div class="explore-grid">
-    <a href="index.html">Map + Tree layer</a>
-    <a href="correlation.html">Correlation analysis</a>
-    <a href="quadrant.html">Child share &times; ATPI quadrant</a>
-    <a href="history.html">Historical redlining</a>
+    <a href="index.html"><svg viewBox="0 0 64 64" fill="#1baf7a"><use href="#tree-shape"/></svg>Map + Tree layer</a>
+    <a href="tree-map.html"><svg viewBox="0 0 64 64" fill="#008300"><use href="#tree-shape"/></svg>Tree Map</a>
+    <a href="atpi-map.html"><svg viewBox="0 0 64 64" fill="#2ca25f"><use href="#tree-shape"/></svg>ATPI Heatmap</a>
+    <a href="correlation.html"><svg viewBox="0 0 64 64" fill="#2a78d6"><use href="#tree-shape"/></svg>Correlation analysis</a>
+    <a href="quadrant.html"><svg viewBox="0 0 64 64" fill="#eda100"><use href="#tree-shape"/></svg>Child share &times; ATPI quadrant</a>
+    <a href="history.html"><svg viewBox="0 0 64 64" fill="#eb6834"><use href="#tree-shape"/></svg>Historical redlining</a>
   </div>
 </section>
 
-<div class="disclaimer">ATPI is a research prototype estimating relative tree-pollen source potential from NYC Parks street-tree data. It is not a measure of air concentration, personal exposure, or medical risk, and is not medical advice.</div>
+<div class="disclaimer">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b23231" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="7" x2="12" y2="13"/><circle cx="12" cy="16.5" r="0.6" fill="#b23231"/></svg>
+  <span>ATPI is a research prototype estimating relative tree-pollen source potential from NYC Parks street-tree data. It is not a measure of air concentration, personal exposure, or medical risk, and is not medical advice.</span>
+</div>
 
 </main>
+
+<script>
+// Decorative treeline in the hero: a row of tree silhouettes in varied
+// heights/greens, echoing the genus palette used on the Tree Map page.
+const COLORS = ['#ffffff', '#ffffff', '#ffffff', '#ffffff', '#ffffff'];
+const treeline = document.getElementById('treeline');
+const n = 26;
+let html = '';
+for (let i = 0; i < n; i++) {
+  const h = 34 + Math.round(Math.sin(i * 0.7) * 10 + Math.random() * 14);
+  const w = h * 0.62;
+  html += `<svg width="${w}" height="${h}" viewBox="0 0 64 64" fill="#ffffff" style="margin-right:${2 + (i % 3)}px"><use href="#tree-shape"/></svg>`;
+}
+treeline.innerHTML = html;
+</script>
 </body>
 </html>

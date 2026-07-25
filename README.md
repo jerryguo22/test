@@ -4,7 +4,11 @@ A static MapLibre GL JS research prototype for studying the relationship between
 
 ## Study Area
 
-All visualizations and analyses (map, correlation, quadrant, and redlining pages) are scoped to **New York City's five boroughs and Westchester County** (2,568 of the state's 5,411 tracts). The underlying dataset still covers the whole state; the rest of New York is shaded out on the map for geographic context but excluded from every statistic (correlation coefficients, quadrant counts, HOLC grade summaries, etc.). The county FIPS codes used for the filter are `36005` (Bronx), `36047` (Kings/Brooklyn), `36061` (New York/Manhattan), `36081` (Queens), `36085` (Richmond/Staten Island), and `36119` (Westchester).
+All visualizations and analyses (map, correlation, quadrant, and redlining pages) are scoped to **New York City's five boroughs** (2,327 of the state's 5,411 tracts). The underlying dataset still covers the whole state; the rest of New York is shaded out on the map for geographic context but excluded from every statistic (correlation coefficients, quadrant counts, HOLC grade summaries, etc.). The county FIPS codes used for the filter are `36005` (Bronx), `36047` (Kings/Brooklyn), `36061` (New York/Manhattan), `36081` (Queens), and `36085` (Richmond/Staten Island).
+
+## Dependencies
+
+MapLibre GL JS, its CSS, and Chart.js are vendored locally under `vendor/` rather than loaded from a CDN — `<script>`/`<link>` tags reference `vendor/maplibre-gl.js`, `vendor/maplibre-gl.css`, and `vendor/chart.umd.min.js` directly. This was pinned to **maplibre-gl@5.24.0** deliberately: v6 dropped the classic UMD script bundle these pages rely on (`dist/maplibre-gl.js`, providing the global `maplibregl`) in favor of ES modules only, so pulling `unpkg.com/maplibre-gl/dist/maplibre-gl.js` unpinned now 404s. The basemap tiles themselves (`tiles.openfreemap.org`) still require network access — only the libraries and the site's own data are local.
 
 ---
 
