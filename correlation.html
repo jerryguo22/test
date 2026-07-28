@@ -449,21 +449,21 @@
         field: 'poverty_rate',
         format: v => `${(v * 100).toFixed(1)}%`,
         min: 0,
-        max: 0.6
+        max: 1
       },
       income: {
         label: { en: 'Median Income', zh: '收入中位数' },
         field: 'income',
         format: v => `$${Math.round(v).toLocaleString()}`,
         min: 0,
-        max: 250000
+        max: 260000
       },
       median_home_value: {
         label: { en: 'Median Home Value', zh: '房屋价值中位数' },
         field: 'median_home_value',
         format: v => `$${Math.round(v).toLocaleString()}`,
         min: 0,
-        max: 1200000
+        max: 2050000
       },
       people_of_color_pct: {
         label: { en: 'People of Color Share', zh: '有色人种比例' },
@@ -484,14 +484,14 @@
         field: 'under18_pct',
         format: v => `${(v * 100).toFixed(1)}%`,
         min: 0,
-        max: 0.45
+        max: 0.65
       },
       over65_pct: {
         label: { en: 'Older Adults 65+', zh: '65 岁及以上老年人' },
         field: 'over65_pct',
         format: v => `${(v * 100).toFixed(1)}%`,
         min: 0,
-        max: 0.45
+        max: 1
       },
       estimated_pm25_average: {
         label: { en: 'Estimated PM2.5 Avg', zh: 'PM2.5 平均估计' },
